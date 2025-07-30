@@ -8,16 +8,10 @@
     <link rel="stylesheet" href="./common/css/root.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-
-</head>
-
-
-<body>
     <style>
         body {
             font-family: 'Inter', sans-serif !important;
             padding: 20px;
-            
         }
 
         * {
@@ -26,8 +20,85 @@
             box-sizing: border-box;
             font-family: "Inter", sans-serif !important;
         }
-    </style>
 
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 500px;
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .email-options {
+            margin: 15px 0;
+        }
+
+        .email-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .email-option input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .custom-email {
+            margin-top: 15px;
+        }
+
+        .custom-email input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .send-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
     <div class="control-panel">
         <div class="control-group">
             <label for="excelFile">Excel File</label>
@@ -41,6 +112,40 @@
     </div>
 
     <div id="resultContainer"></div>
+
+    <!-- Email Modal -->
+    <div id="emailModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Share Birthday Post</h2>
+            <div class="email-options">
+                <div class="email-option">
+                    <input type="checkbox" id="email1" checked>
+                    <label for="email1">namiq.nagiyev@absheronport.az</label>
+                </div>
+                <div class="email-option">
+                    <input type="checkbox" id="email2" checked>
+                    <label for="email2">solmaz.ahmadzada@absheronport.az</label>
+                </div>
+                <div class="email-option">
+                    <input type="checkbox" id="email2" checked>
+                    <label for="email2">irada.mikayilova@absheronport.az</label>
+                </div>
+                <div class="email-option">
+                    <input type="checkbox" id="email2" checked>
+                    <label for="email2">kanan.musali@absheronport.az</label>
+                </div>
+            </div>
+            <div class="custom-email">
+                <label>Add additional emails (must end with @absheronport.az)</label>
+                <input type="text" id="additionalEmails" placeholder="email1@absheronport.az, email2@absheronport.az">
+            </div>
+            <div class="button-group">
+                <button class="send-btn" id="sendEmail">Send via Outlook</button>
+                <button class="cancel-btn" id="cancelEmail">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -58,20 +163,21 @@
         let currentY = 531;
         let monthX = 530;
         let monthY = -165;
-        let monthRotation = 1.1; 
+        let monthRotation = 1.1;
         let dayX = 465;
         let dayY = 71;
-        let dayRotation = 1.4; 
+        let dayRotation = 1.4;
         let imageZIndex = 999;
+        let currentCanvasDataURL = '';
 
         document.getElementById('processBtn').addEventListener('click', processExcel);
 
         function fixTurkishCharacters(text) {
             if (!text) return text;
             const replacements = {
-                'İ': 'İ',  
-                'ı': 'ı',  
-                'i': 'i', 
+                'İ': 'İ',
+                'ı': 'ı',
+                'i': 'i',
                 'ğ': 'ğ',
                 'Ğ': 'Ğ',
                 'ş': 'ş',
@@ -86,33 +192,6 @@
 
             return text.replace(/[İıiğĞşŞüÜöÖçÇ]/g, char => replacements[char] || char);
         }
-        // function transformDepartment(jobOriginal) {
-        //     const jobReplaceList = [
-        //         "BBGİ ofisi",
-        //         "Bəyannamə bölməsi",
-        //         "Gömrük təmsilçiliyi bölməsi",
-        //         "HNBGİ ofisi",
-        //         "Koordinasiya şöbəsi",
-        //         "Koordinasiya şöbəsi / Sertifikatlaşdırma bölməsi",
-        //         "Mühasibatlıq şöbəsi",
-        //         "MB Broker",
-        //         "Mühasibatlıq şöbəsi / Kassa - hesablaşmalar bölməsi",
-        //         "Satış şöbəsi",
-        //     ];
-
-        //     if (jobOriginal === "TIR Park və minik avtomobillərinin dayanacağı şöbəsi") {
-        //         return [
-        //             "TIR Park və m. a. dayanacağı şöbəsi"
-        //         ];
-        //     } else if (jobOriginal.startsWith("DDD / Daxili daşımalar departamenti")) {
-        //         return ["Daxili daşımalar departamenti"];
-        //     } else if (jobReplaceList.some(prefix => jobOriginal.startsWith(prefix))) {
-        //         return ["MB BROKER"];
-        //     } else {
-        //         return [jobOriginal];
-        //     }
-        // }
-
 
         function transformDepartment(jobOriginal) {
             const jobReplaceList = [
@@ -129,11 +208,11 @@
             ];
 
             if (jobOriginal === "TIR Park və minik avtomobillərinin dayanacağı şöbəsi") {
-                return [
-                    "TIR Park və m. a. dayanacağı şöbəsi"
-                ];
+                return ["TIR Park və m. a. dayanacağı şöbəsi"];
             } else if (jobOriginal.startsWith("DDD / Daxili daşımalar departamenti")) {
                 return ["Daxili daşımalar departamenti"];
+            } else if (jobOriginal.startsWith("Təhlükəsizlik şöbəsi / Elektrik təminatı və Təmir bölməsi")) {
+                return ["Təhlükəsizlik şöbəsi"];
             } else if (jobOriginal.startsWith("İRİD/İstedadların cəlbi və idarə olunması şöbəsi")) {
                 return ["İRİD / İstedadların cəlbi və idarə olunması Ş."];
             } else if (jobReplaceList.some(prefix => jobOriginal.startsWith(prefix))) {
@@ -639,12 +718,17 @@
                 const anniversaryImg = await loadImage(selectedAnniversaryImage);
                 ctx.drawImage(anniversaryImg, 0, 0, canvas.width, canvas.height);
 
+                currentCanvasDataURL = canvas.toDataURL('image/png');
+
                 const previewContainer = document.createElement('div');
                 previewContainer.className = 'preview-container';
 
                 const previewImg = document.createElement('img');
                 previewImg.className = 'preview-image';
-                previewImg.src = canvas.toDataURL('image/png');
+                previewImg.src = currentCanvasDataURL;
+
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'button-group';
 
                 const downloadBtn = document.createElement('button');
                 downloadBtn.className = 'download-btn';
@@ -652,13 +736,23 @@
                 downloadBtn.onclick = () => {
                     const link = document.createElement('a');
                     link.download = `Birthday_${monthName}_${day}.png`;
-                    link.href = canvas.toDataURL('image/png');
+                    link.href = currentCanvasDataURL;
                     link.click();
                 };
 
+                const shareBtn = document.createElement('button');
+                shareBtn.className = 'share-btn';
+                shareBtn.textContent = 'Share via Email';
+                shareBtn.onclick = () => {
+                    document.getElementById('emailModal').style.display = 'block';
+                };
+
+                buttonGroup.appendChild(downloadBtn);
+                buttonGroup.appendChild(shareBtn);
+
                 document.querySelector('.preview-container')?.remove();
                 previewContainer.appendChild(previewImg);
-                previewContainer.appendChild(downloadBtn);
+                previewContainer.appendChild(buttonGroup);
 
                 const positionControls = document.querySelector('.position-controls');
                 if (positionControls) {
@@ -672,10 +766,11 @@
                 alert("Error generating final image. Please check console for details.");
             }
         }
+
         function loadImage(src) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
-                img.crossOrigin = "Anonymous"; 
+                img.crossOrigin = "Anonymous";
                 img.onload = () => resolve(img);
                 img.onerror = (e) => {
                     console.error("Error loading image:", src, e);
@@ -684,6 +779,106 @@
                 img.src = src;
             });
         }
+
+        // Initialize modal functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('emailModal');
+            const closeBtn = document.querySelector('.close');
+            const cancelBtn = document.getElementById('cancelEmail');
+            const sendBtn = document.getElementById('sendEmail');
+
+            // Close modal when clicking X or cancel button
+            closeBtn.onclick = function () {
+                modal.style.display = 'none';
+            }
+            cancelBtn.onclick = function () {
+                modal.style.display = 'none';
+            }
+
+            // Close modal when clicking outside
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+
+            // Handle send email button
+           sendBtn.onclick = function() {
+    const emails = [];
+    
+    // 1. Get checked emails
+    document.querySelectorAll('.email-option input[type="checkbox"]:checked').forEach(checkbox => {
+        const email = checkbox.nextElementSibling.textContent.trim();
+        emails.push(email);
+    });
+
+    // 2. Get additional emails
+    const additionalEmails = document.getElementById('additionalEmails').value
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email !== '');
+
+    // 3. Validate emails
+    for (const email of additionalEmails) {
+        if (!email.endsWith('@absheronport.az')) {
+            alert(`Error: ${email} must end with @absheronport.az`);
+            return;
+        }
+    }
+
+    // 4. Combine emails
+    const allEmails = [...emails, ...additionalEmails];
+    if (allEmails.length === 0) {
+        alert('Please select at least one email address.');
+        return;
+    }
+
+    // 5. Create canvas with original size
+    const img = new Image();
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // 6. Convert canvas to downloadable PNG
+        canvas.toBlob(function(blob) {
+            const a = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Set filename
+            const monthName = document.querySelector('.Section-month').textContent;
+            const day = document.querySelector('.Section-day').textContent;
+            const filename = `Birthday_${monthName}_${day}.png`;
+            
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+            
+            // 7. Open Outlook (blank body = auto-adds signature)
+            const subject = `Birthday Greetings - ${monthName} ${day}`;
+            const mailtoLink = `mailto:${allEmails.join(',')}?subject=${encodeURIComponent(subject)}`;
+            window.location.href = mailtoLink;
+            
+            // 8. Show instructions
+            alert("1. Image downloaded.\n2. Outlook opened (signature auto-added).\n3. Manually attach the image.");
+            
+            // 9. Close modal
+            modal.style.display = 'none';
+        }, 'image/png');
+    };
+    img.src = currentCanvasDataURL;
+};
+        });
     </script>
 </body>
 
