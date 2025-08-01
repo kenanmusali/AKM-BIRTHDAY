@@ -95,6 +95,14 @@
             background-color: #f44336;
             color: white;
         }
+
+        .anniversary-options img {
+            width: 100px;
+        }
+
+        .share-btn {
+            display: none;
+        }
     </style>
 </head>
 
@@ -415,7 +423,7 @@
             const selectorDiv = document.createElement('div');
             selectorDiv.className = 'anniversary-selector';
             selectorDiv.innerHTML = `
-                <h3>Select Anniversary Image (1-10.png)</h3>
+                <h3>Select Anniversary Image (1-11.png)</h3>
                 <div class="anniversary-options" id="anniversaryOptions"></div>
             `;
 
@@ -428,18 +436,19 @@
 
             const optionsContainer = document.getElementById('anniversaryOptions');
 
-            // Load first 10 images
-            for (let i = 1; i <= 10; i++) {
+            // Load preview images (preview1.png to preview11.png)
+            for (let i = 1; i <= 11; i++) {
                 const option = document.createElement('img');
                 option.className = 'anniversary-option';
-                option.src = `./assets/img/${i}.png`;
+                option.src = `./assets/img/preview${i}.png`; // Show preview image
                 option.dataset.number = i;
                 option.onclick = function () {
                     document.querySelectorAll('.anniversary-option').forEach(el => {
                         el.classList.remove('selected');
                     });
                     this.classList.add('selected');
-                    selectedAnniversaryImage = this.src;
+                    // Use the corresponding original image (1.png to 11.png)
+                    selectedAnniversaryImage = `./assets/img/${i}.png`;
                     generateFinalImage();
                 };
                 option.onerror = function () {
@@ -449,7 +458,7 @@
                 optionsContainer.appendChild(option);
             }
 
-            // Select the first image by default
+            // Select the first image by default if available
             if (optionsContainer.firstChild) {
                 optionsContainer.firstChild.click();
             }
@@ -495,14 +504,14 @@
                     // Format: DD.MM.YYYY (14.06.1980)
                     if (dateStr.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
                         const parts = dateStr.split('.');
-                        day = parseInt(parts[0], 10);
+                        day = parseInt(parts[0], 11);
                         month = parseInt(parts[1], 10);
                     }
                     // Format: YYYY-MM-DD (if dates come as ISO strings)
                     else if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
                         const parts = dateStr.split('-');
-                        day = parseInt(parts[2], 10);
-                        month = parseInt(parts[1], 10);
+                        day = parseInt(parts[2], 11);
+                        month = parseInt(parts[1], 11);
                     }
                     // If it's an Excel serial date number (unlikely but possible)
                     else if (!isNaN(dateStr)) {
