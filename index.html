@@ -494,6 +494,7 @@
                 const selectedDate = document.getElementById('datePicker').value;
                 const [selectedDay, selectedMonth] = selectedDate.split('/').map(Number);
 
+                // Filter and sort employees - those with "qızı" in name come first
                 birthdayEmployees = jsonData.filter(row => {
                     if (!row.ДатаР2) return false;
 
@@ -526,6 +527,17 @@
                     }
 
                     return day === selectedDay && month === selectedMonth;
+                }).sort((a, b) => {
+                    // Check if name ends with "qızı" (case insensitive)
+                    const aName = (a.ссылка || '').toString().toLowerCase();
+                    const bName = (b.ссылка || '').toString().toLowerCase();
+                    
+                    const aHasQizi = aName.endsWith('qızı');
+                    const bHasQizi = bName.endsWith('qızı');
+                    
+                    if (aHasQizi && !bHasQizi) return -1;
+                    if (!aHasQizi && bHasQizi) return 1;
+                    return 0; // Keep original order if both have or don't have "qızı"
                 });
 
                 // Create and populate section divs
