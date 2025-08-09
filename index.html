@@ -103,87 +103,15 @@
         .share-btn {
             display: none;
         }
-
-        /* File list styles */
-        .file-list {
-            margin-top: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .file-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .file-item:last-child {
-            border-bottom: none;
-        }
-
-        .file-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .file-select-btn, .file-delete-btn {
-            padding: 3px 8px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .file-select-btn {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 3px;
-        }
-
-        .file-delete-btn {
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 3px;
-        }
-
-        .control-panel {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .control-group label {
-            font-weight: 500;
-        }
     </style>
 </head>
 
 <body>
     <div class="control-panel">
         <div class="control-group">
-            <label for="excelFile">Upload Excel File</label>
+            <label for="excelFile">Excel File</label>
             <input type="file" id="excelFile" accept=".xlsx, .xls">
         </div>
-
-        <div class="control-group">
-            <label for="fileList">Select from Uploaded Files</label>
-            <div class="file-list" id="fileList">
-                <!-- Files will be listed here -->
-                Loading files...
-            </div>
-        </div>
-
         <div class="control-group">
             <label for="datePicker">Birthday Date</label>
             <input type="text" id="datePicker" placeholder="DD/MM">
@@ -208,12 +136,12 @@
                     <label for="email2">solmaz.ahmadzada@absheronport.az</label>
                 </div>
                 <div class="email-option">
-                    <input type="checkbox" id="email3" checked>
-                    <label for="email3">irada.mikayilova@absheronport.az</label>
+                    <input type="checkbox" id="email2" checked>
+                    <label for="email2">irada.mikayilova@absheronport.az</label>
                 </div>
                 <div class="email-option">
-                    <input type="checkbox" id="email4" checked>
-                    <label for="email4">kanan.musali@absheronport.az</label>
+                    <input type="checkbox" id="email2" checked>
+                    <label for="email2">kanan.musali@absheronport.az</label>
                 </div>
             </div>
             <div class="custom-email">
@@ -230,11 +158,6 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        // Base URL configuration
-        const BASE_URL = 'https://akm-birthday.vercel.app';
-        const DOCS_PATH = '/assets/docs/';
-        const FULL_DOCS_PATH = BASE_URL + DOCS_PATH;
-
         flatpickr("#datePicker", {
             dateFormat: "d/m",
             enableTime: false,
@@ -256,139 +179,6 @@
         let currentCanvasDataURL = '';
 
         document.getElementById('processBtn').addEventListener('click', processExcel);
-        document.getElementById('excelFile').addEventListener('change', handleFileUpload);
-
-        // Initialize by loading file list
-        document.addEventListener('DOMContentLoaded', loadFileList);
-
-        async function loadFileList() {
-            try {
-                const response = await fetch(`${BASE_URL}/api/listFiles`);
-                if (!response.ok) throw new Error('Failed to load files');
-                
-                const files = await response.json();
-                const fileListDiv = document.getElementById('fileList');
-                
-                if (files.length === 0) {
-                    fileListDiv.innerHTML = 'No files uploaded yet';
-                    return;
-                }
-                
-                fileListDiv.innerHTML = '';
-                
-                files.forEach(file => {
-                    const fileItem = document.createElement('div');
-                    fileItem.className = 'file-item';
-                    fileItem.innerHTML = `
-                        <span>${file}</span>
-                        <div class="file-actions">
-                            <button class="file-select-btn" data-filename="${file}">Select</button>
-                            <button class="file-delete-btn" data-filename="${file}">Delete</button>
-                        </div>
-                    `;
-                    fileListDiv.appendChild(fileItem);
-                });
-                
-                // Add event listeners to buttons
-                document.querySelectorAll('.file-select-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        selectFile(this.dataset.filename);
-                    });
-                });
-                
-                document.querySelectorAll('.file-delete-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        deleteFile(this.dataset.filename);
-                    });
-                });
-                
-            } catch (error) {
-                console.error('Error loading file list:', error);
-                document.getElementById('fileList').innerHTML = 'Error loading files';
-            }
-        }
-
-        async function selectFile(filename) {
-            try {
-                // Fetch the file
-                const response = await fetch(`${FULL_DOCS_PATH}${filename}`);
-                if (!response.ok) throw new Error('File not found');
-                
-                const blob = await response.blob();
-                
-                // Create a File object from the blob
-                const file = new File([blob], filename, { type: blob.type });
-                
-                // Create a data transfer object to simulate file input
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                
-                // Set the file input value
-                const fileInput = document.getElementById('excelFile');
-                fileInput.files = dataTransfer.files;
-                
-                // Show success message
-                alert(`Selected file: ${filename}`);
-                
-            } catch (error) {
-                console.error('Error selecting file:', error);
-                alert('Failed to select file');
-            }
-        }
-
-        async function deleteFile(filename) {
-            if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
-            
-            try {
-                const response = await fetch(`${BASE_URL}/api/deleteFile`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ filename })
-                });
-                
-                if (!response.ok) throw new Error('Failed to delete file');
-                
-                // Refresh file list
-                loadFileList();
-                alert('File deleted successfully');
-                
-            } catch (error) {
-                console.error('Error deleting file:', error);
-                alert('Failed to delete file');
-            }
-        }
-
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-                
-                const response = await fetch(`${BASE_URL}/api/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) throw new Error('Upload failed');
-                
-                const result = await response.json();
-                if (result.success) {
-                    alert('File uploaded successfully');
-                    // Refresh file list
-                    loadFileList();
-                } else {
-                    throw new Error(result.message || 'Upload failed');
-                }
-                
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                alert('Error uploading file: ' + error.message);
-            }
-        }
 
         function fixTurkishCharacters(text) {
             if (!text) return text;
@@ -652,7 +442,7 @@
             for (let i = 1; i <= 11; i++) {
                 const option = document.createElement('img');
                 option.className = 'anniversary-option';
-                option.src = `${BASE_URL}/assets/img/preview${i}.png`; // Show preview image
+                option.src = `./assets/img/preview${i}.png`; // Show preview image
                 option.dataset.number = i;
                 option.onclick = function () {
                     document.querySelectorAll('.anniversary-option').forEach(el => {
@@ -660,7 +450,7 @@
                     });
                     this.classList.add('selected');
                     // Use the corresponding original image (1.png to 11.png)
-                    selectedAnniversaryImage = `${BASE_URL}/assets/img/${i}.png`;
+                    selectedAnniversaryImage = `./assets/img/${i}.png`;
                     generateFinalImage();
                 };
                 option.onerror = function () {
@@ -812,7 +602,7 @@
                 createTextPositionControls();
 
                 try {
-                    canvasBgImage = await loadImage(`${BASE_URL}/assets/img/canva.png`);
+                    canvasBgImage = await loadImage('./assets/img/canva.png');
                     generateFinalImage();
                 } catch (error) {
                     console.error("Error loading canvas background:", error);
@@ -1036,81 +826,81 @@
             }
 
             // Handle send email button
-            sendBtn.onclick = function() {
-                const emails = [];
-                
-                // 1. Get checked emails
-                document.querySelectorAll('.email-option input[type="checkbox"]:checked').forEach(checkbox => {
-                    const email = checkbox.nextElementSibling.textContent.trim();
-                    emails.push(email);
-                });
+           sendBtn.onclick = function() {
+    const emails = [];
+    
+    // 1. Get checked emails
+    document.querySelectorAll('.email-option input[type="checkbox"]:checked').forEach(checkbox => {
+        const email = checkbox.nextElementSibling.textContent.trim();
+        emails.push(email);
+    });
 
-                // 2. Get additional emails
-                const additionalEmails = document.getElementById('additionalEmails').value
-                    .split(',')
-                    .map(email => email.trim())
-                    .filter(email => email !== '');
+    // 2. Get additional emails
+    const additionalEmails = document.getElementById('additionalEmails').value
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email !== '');
 
-                // 3. Validate emails
-                for (const email of additionalEmails) {
-                    if (!email.endsWith('@absheronport.az')) {
-                        alert(`Error: ${email} must end with @absheronport.az`);
-                        return;
-                    }
-                }
+    // 3. Validate emails
+    for (const email of additionalEmails) {
+        if (!email.endsWith('@absheronport.az')) {
+            alert(`Error: ${email} must end with @absheronport.az`);
+            return;
+        }
+    }
 
-                // 4. Combine emails
-                const allEmails = [...emails, ...additionalEmails];
-                if (allEmails.length === 0) {
-                    alert('Please select at least one email address.');
-                    return;
-                }
+    // 4. Combine emails
+    const allEmails = [...emails, ...additionalEmails];
+    if (allEmails.length === 0) {
+        alert('Please select at least one email address.');
+        return;
+    }
 
-                // 5. Create canvas with original size
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    
-                    // 6. Convert canvas to downloadable PNG
-                    canvas.toBlob(function(blob) {
-                        const a = document.createElement('a');
-                        const url = URL.createObjectURL(blob);
-                        
-                        // Set filename
-                        const monthName = document.querySelector('.Section-month').textContent;
-                        const day = document.querySelector('.Section-day').textContent;
-                        const filename = `Birthday_${monthName}_${day}.png`;
-                        
-                        a.href = url;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        
-                        // Clean up
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            window.URL.revokeObjectURL(url);
-                        }, 100);
-                        
-                        // 7. Open Outlook (blank body = auto-adds signature)
-                        const subject = `Birthday Greetings - ${monthName} ${day}`;
-                        const mailtoLink = `mailto:${allEmails.join(',')}?subject=${encodeURIComponent(subject)}`;
-                        window.location.href = mailtoLink;
-                        
-                        // 8. Show instructions
-                        alert("1. Image downloaded.\n2. Outlook opened (signature auto-added).\n3. Manually attach the image.");
-                        
-                        // 9. Close modal
-                        modal.style.display = 'none';
-                    }, 'image/png');
-                };
-                img.src = currentCanvasDataURL;
-            };
+    // 5. Create canvas with original size
+    const img = new Image();
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // 6. Convert canvas to downloadable PNG
+        canvas.toBlob(function(blob) {
+            const a = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Set filename
+            const monthName = document.querySelector('.Section-month').textContent;
+            const day = document.querySelector('.Section-day').textContent;
+            const filename = `Birthday_${monthName}_${day}.png`;
+            
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+            
+            // 7. Open Outlook (blank body = auto-adds signature)
+            const subject = `Birthday Greetings - ${monthName} ${day}`;
+            const mailtoLink = `mailto:${allEmails.join(',')}?subject=${encodeURIComponent(subject)}`;
+            window.location.href = mailtoLink;
+            
+            // 8. Show instructions
+            alert("1. Image downloaded.\n2. Outlook opened (signature auto-added).\n3. Manually attach the image.");
+            
+            // 9. Close modal
+            modal.style.display = 'none';
+        }, 'image/png');
+    };
+    img.src = currentCanvasDataURL;
+};
         });
     </script>
 </body>
