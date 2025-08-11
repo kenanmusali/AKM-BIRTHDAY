@@ -1,12 +1,10 @@
 import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -17,40 +15,34 @@ export default async function handler(req, res) {
 
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) {
-      console.error('BLOB_READ_WRITE_TOKEN is missing');
-      throw new Error('Server configuration error');
-    }
+    console.log('Token exists:', !!token);
+    if (!token) throw new Error('Missing BLOB_READ_WRITE_TOKEN env variable');
 
-    const { fileName, folderPath = 'docs/', fileType = 'application/octet-stream' } = req.body;
+    const { fileName, folderPath = 'docs', fileType = 'application/octet-stream' } = req.body;
 
     if (!fileName) {
-      return res.status(400).json({ error: 'File name is required' });
+      return res.status(400).json({ error: 'fileName is required' });
     }
 
-    // Sanitize filename and create unique path
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const fullPath = `${folderPath.replace(/\/$/, '')}/${Date.now()}-${safeFileName}`;
+    // sanitize filename
+    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `${folderPath.replace(/\/$/, '')}/${Date.now()}-${safeName}`;
 
-    // IMPORTANT: put expects (filePath, token, data, options)
-    // Create empty file (Buffer.from('')) to get upload URL
-    const blob = await put(fullPath, token, Buffer.from(''), {
+    const blob = await put(filePath, token, Buffer.from(''), {
       access: 'public',
       contentType: fileType,
     });
 
     return res.status(200).json({
-      success: true,
       uploadUrl: blob.url,
-      filePath: fullPath,
+      filePath,
       downloadUrl: blob.downloadUrl,
     });
-
   } catch (error) {
-    console.error('Blob error:', error);
+    console.error('Upload URL generation error:', error);
     return res.status(500).json({
       error: 'Failed to generate upload URL',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      details: error.message,
     });
   }
 }
