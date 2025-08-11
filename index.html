@@ -21,87 +21,132 @@
             font-family: "Inter", sans-serif !important;
         }
 
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
+        .control-panel {
+            background: #f5f5f5;
             padding: 20px;
-            border: 1px solid #888;
-            width: 500px;
-            border-radius: 8px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            max-width: 800px;
         }
 
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
+        .control-group {
+            margin-bottom: 15px;
         }
 
-        .close:hover {
-            color: black;
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
         }
 
-        .email-options {
-            margin: 15px 0;
-        }
-
-        .email-option {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .email-option input[type="checkbox"] {
-            margin-right: 10px;
-        }
-
-        .custom-email {
-            margin-top: 15px;
-        }
-
-        .custom-email input {
+        input[type="file"], input[type="text"] {
             width: 100%;
-            padding: 8px;
-            margin-top: 5px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #016EE2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #0346B8;
+        }
+
+        #resultContainer {
+            margin-top: 20px;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
 
         .button-group {
+            margin-top: 15px;
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            justify-content: center;
         }
 
-        .send-btn {
-            background-color: #4CAF50;
-            color: white;
+        .section-container {
+            display: none; /* Hide the sections as they're only used for canvas */
         }
 
-        .cancel-btn {
-            background-color: #f44336;
-            color: white;
+        .anniversary-selector {
+            margin: 20px 0;
         }
 
-        .anniversary-options img {
+        .anniversary-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .anniversary-option {
             width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
-        .share-btn {
-            display: none;
+        .anniversary-option:hover {
+            border-color: #016EE2;
+        }
+
+        .anniversary-option.selected {
+            border-color: #016EE2;
+            box-shadow: 0 0 0 2px #016EE2;
+        }
+
+        .position-controls, .text-position-controls {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .excel-file-list {
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .excel-file-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .excel-file-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .excel-file-item:last-child {
+            border-bottom: none;
+        }
+
+        .excel-file-item.selected {
+            background-color: #016EE2;
+            color: white;
         }
     </style>
 </head>
@@ -111,7 +156,17 @@
         <div class="control-group">
             <label for="excelFile">Excel File</label>
             <input type="file" id="excelFile" accept=".xlsx, .xls">
+            <div class="excel-file-list" id="excelFileList">
+                Loading available Excel files...
+            </div>
         </div>
+<div class="control-group">
+    <label for="excelFileUpload">Upload Excel File</label>
+    <input type="file" id="excelFileUpload" accept=".xlsx, .xls">
+    <button onclick="uploadExcelFile()">Upload to List</button>
+    <div id="uploadStatus"></div>
+</div>
+
         <div class="control-group">
             <label for="datePicker">Birthday Date</label>
             <input type="text" id="datePicker" placeholder="DD/MM">
@@ -120,40 +175,6 @@
     </div>
 
     <div id="resultContainer"></div>
-
-    <!-- Email Modal -->
-    <div id="emailModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Share Birthday Post</h2>
-            <div class="email-options">
-                <div class="email-option">
-                    <input type="checkbox" id="email1" checked>
-                    <label for="email1">namiq.nagiyev@absheronport.az</label>
-                </div>
-                <div class="email-option">
-                    <input type="checkbox" id="email2" checked>
-                    <label for="email2">solmaz.ahmadzada@absheronport.az</label>
-                </div>
-                <div class="email-option">
-                    <input type="checkbox" id="email2" checked>
-                    <label for="email2">irada.mikayilova@absheronport.az</label>
-                </div>
-                <div class="email-option">
-                    <input type="checkbox" id="email2" checked>
-                    <label for="email2">kanan.musali@absheronport.az</label>
-                </div>
-            </div>
-            <div class="custom-email">
-                <label>Add additional emails (must end with @absheronport.az)</label>
-                <input type="text" id="additionalEmails" placeholder="email1@absheronport.az, email2@absheronport.az">
-            </div>
-            <div class="button-group">
-                <button class="send-btn" id="sendEmail">Send via Outlook</button>
-                <button class="cancel-btn" id="cancelEmail">Cancel</button>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -177,6 +198,352 @@
         let dayRotation = 1.4;
         let imageZIndex = 999;
         let currentCanvasDataURL = '';
+
+
+
+async function loadExcelFiles() {
+  const excelFileList = document.getElementById('excelFileList');
+  excelFileList.innerHTML = 'Loading available Excel files...';
+
+  try {
+    // First fetch the JSON file list
+    const listResponse = await fetch('assets/docs/excel-files.json');
+    if (!listResponse.ok) throw new Error('Failed to load file list');
+    
+    const excelFiles = await listResponse.json();
+    excelFileList.innerHTML = '';
+
+    if (excelFiles.length === 0) {
+      excelFileList.innerHTML = 'No Excel files found in assets/docs folder';
+      return;
+    }
+
+    // Now process each file from the real list
+    excelFiles.forEach(file => {
+      const fileItem = document.createElement('div');
+      fileItem.className = 'excel-file-item';
+      fileItem.textContent = file;
+
+      fileItem.onclick = async function() {
+        // Remove selection from all items
+        document.querySelectorAll('.excel-file-item').forEach(item => {
+          item.classList.remove('selected');
+        });
+        
+        // Add selection to clicked item
+        this.classList.add('selected');
+        
+        try {
+          // Fetch the actual Excel file from assets/docs
+          const fileUrl = `assets/docs/${file}`;
+          const fileResponse = await fetch(fileUrl);
+          
+          if (!fileResponse.ok) throw new Error(`HTTP error! status: ${fileResponse.status}`);
+          
+          const arrayBuffer = await fileResponse.arrayBuffer();
+          
+          // Process the actual Excel file
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+          
+          // Store the data for later use
+          window.currentExcelData = {
+            filename: file,
+            data: jsonData
+          };
+          
+          // Update status
+          excelFileList.innerHTML = `<div class="excel-file-item selected">${file} (loaded)</div>`;
+          
+        } catch (error) {
+          console.error('Error loading Excel file:', error);
+          excelFileList.innerHTML = `<div class="excel-file-item error">Error loading ${file}</div>`;
+        }
+      };
+
+      excelFileList.appendChild(fileItem);
+    });
+
+  } catch (error) {
+    excelFileList.innerHTML = 'Error loading file list: ' + error.message;
+    console.error('Error:', error);
+  }
+}
+
+async function processExcelFromBuffer(arrayBuffer, filename) {
+  try {
+    console.log(`Processing Excel file: ${filename}`);
+    // Add your Excel processing logic here
+    // Example using SheetJS:
+    // const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+    // const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    // const data = XLSX.utils.sheet_to_json(firstSheet);
+    // Process your data here...
+    
+  } catch (error) {
+    console.error('Error processing Excel file:', error);
+    throw error;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadExcelFiles);
+
+async function processExcel() {
+    const selectedDate = document.getElementById('datePicker').value;
+    const fileInput = document.getElementById('excelFile');
+    
+    if (!selectedDate) {
+        alert("Please select a date");
+        return;
+    }
+
+    // Check if a file was uploaded
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async function(e) {
+            const data = new Uint8Array(e.target.result);
+            processExcelData(data, selectedDate);
+        };
+
+        reader.readAsArrayBuffer(file);
+    } 
+    // Check if a file was selected from the list
+    else if (window.currentExcelData) {
+        // Create a mock array buffer from the stored data
+        const ws = XLSX.utils.json_to_sheet(window.currentExcelData.data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+        const arrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        
+        processExcelData(arrayBuffer, selectedDate);
+    } 
+    // No file selected
+    else {
+        alert("Please either upload an Excel file or select one from the list");
+        return;
+    }
+}
+
+async function processExcelData(arrayBuffer, selectedDate) {
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+    const resultContainer = document.getElementById('resultContainer');
+
+    // Clear only the preview and employee data, keep controls
+    const elementsToRemove = document.querySelectorAll('.preview-container, .month-day-display, .employee-list, .section-container');
+    elementsToRemove.forEach(el => el.remove());
+
+    // Get selected date parts
+    const [selectedDay, selectedMonth] = selectedDate.split('/').map(Number);
+
+    // Filter and sort employees - those with "qızı" in name come first
+    birthdayEmployees = jsonData.filter(row => {
+        if (!row.ДатаР2) return false;
+
+        // Convert to string in case it's a date object or number
+        const dateStr = row.ДатаР2.toString().trim();
+
+        // Handle different date formats
+        let day, month;
+
+        // Format: DD.MM.YYYY (14.06.1980)
+        if (dateStr.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
+            const parts = dateStr.split('.');
+            day = parseInt(parts[0], 11);
+            month = parseInt(parts[1], 10);
+        }
+        // Format: YYYY-MM-DD (if dates come as ISO strings)
+        else if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
+            const parts = dateStr.split('-');
+            day = parseInt(parts[2], 11);
+            month = parseInt(parts[1], 11);
+        }
+        // If it's an Excel serial date number (unlikely but possible)
+        else if (!isNaN(dateStr)) {
+            const date = new Date((parseFloat(dateStr) - 25569) * 86400 * 1000);
+            day = date.getDate();
+            month = date.getMonth() + 1;
+        } else {
+            console.warn("Unrecognized date format:", dateStr);
+            return false;
+        }
+
+        return day === selectedDay && month === selectedMonth;
+    }).sort((a, b) => {
+        // Check if name ends with "qızı" (case insensitive)
+        const aName = (a.ссылка || '').toString().toLowerCase();
+        const bName = (b.ссылка || '').toString().toLowerCase();
+
+        const aHasQizi = aName.endsWith('qızı');
+        const bHasQizi = bName.endsWith('qızı');
+
+        if (aHasQizi && !bHasQizi) return -1;
+        if (!aHasQizi && bHasQizi) return 1;
+        return 0; // Keep original order if both have or don't have "qızı"
+    });
+
+    // Rest of your existing processing code...
+    // Create and populate section divs
+    const sectionContainer = document.createElement('div');
+    sectionContainer.className = 'section-container';
+
+    for (let i = 0; i < 5; i++) {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'section-div' + (i >= birthdayEmployees.length ? ' empty' : '');
+        sectionDiv.id = `section-${i + 1}`;
+
+        if (i < birthdayEmployees.length) {
+            const employee = birthdayEmployees[i];
+            const name = fixTurkishCharacters(employee.ссылка);
+            const jobOriginal = fixTurkishCharacters(employee.Department || '').trim();
+            const jobLines = transformDepartment(jobOriginal);
+
+            sectionDiv.innerHTML = `
+                <h3>${name || 'Name not available'}</h3>
+                <div>${jobLines.join('<br>')}</div>
+            `;
+        } else {
+            sectionDiv.innerHTML = `<h3>Section ${i + 1}</h3>`;
+        }
+
+        sectionContainer.appendChild(sectionDiv);
+    }
+
+    resultContainer.appendChild(sectionContainer);
+
+    if (birthdayEmployees.length === 0) {
+        resultContainer.innerHTML += '<p>No employees found with birthdays on this date</p>';
+        return;
+    }
+
+    // Display month and day
+    const monthNames = ["YANVAR", "FEVRAL", "MART", "APREL", "MAY", "İYUN",
+        "İYUL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
+    const monthName = monthNames[selectedMonth - 1];
+
+    const monthDayDisplay = document.createElement('div');
+    monthDayDisplay.className = 'month-day-display';
+    monthDayDisplay.innerHTML = `
+        <div class="Section-month">${monthName}</div>
+        <div class="Section-day">${selectedDay}</div>
+    `;
+    resultContainer.appendChild(monthDayDisplay);
+
+    // Set day rotation based on month
+    const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
+    const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
+
+    if (highRotationMonths.includes(monthName)) {
+        dayRotation = 1.4;
+    } else if (lowRotationMonths.includes(monthName)) {
+        dayRotation = 1.8;
+    }
+
+    // Create anniversary selector and position controls
+    createAnniversarySelector();
+    createPositionControls();
+    createTextPositionControls();
+
+    try {
+        canvasBgImage = await loadImage('./assets/img/canva.png');
+        generateFinalImage();
+    } catch (error) {
+        console.error("Error loading canvas background:", error);
+        alert("Failed to load canvas background image");
+    }
+}
+
+async function uploadExcelFile() {
+    const fileInput = document.getElementById('excelFileUpload');
+    const statusDiv = document.getElementById('uploadStatus');
+    
+    if (fileInput.files.length === 0) {
+        statusDiv.textContent = 'Please select a file first';
+        return;
+    }
+
+    const file = fileInput.files[0];
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+        statusDiv.textContent = 'Please upload an Excel file (.xlsx or .xls)';
+        return;
+    }
+
+    statusDiv.textContent = 'Uploading...';
+
+    const formData = new FormData();
+    formData.append('excelFile', file);
+
+    try {
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            statusDiv.textContent = result.message;
+            loadExcelFiles(); // Refresh the list
+        } else {
+            statusDiv.textContent = 'Error: ' + (result.error || 'Upload failed');
+        }
+    } catch (error) {
+        statusDiv.textContent = 'Upload failed: ' + error.message;
+        console.error('Upload error:', error);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        // Load Excel files when page loads
+        document.addEventListener('DOMContentLoaded', loadExcelFiles);
 
         document.getElementById('processBtn').addEventListener('click', processExcel);
 
@@ -466,153 +833,7 @@
             }
         }
 
-        async function processExcel() {
-            const file = document.getElementById('excelFile').files[0];
-            const selectedDate = document.getElementById('datePicker').value;
-
-            if (!file || !selectedDate) {
-                alert("Please upload file and select date");
-                return;
-            }
-
-            const [day, month] = selectedDate.split('/');
-            const reader = new FileReader();
-
-            reader.onload = async function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-                const resultContainer = document.getElementById('resultContainer');
-
-                // Clear only the preview and employee data, keep controls
-                const elementsToRemove = document.querySelectorAll('.preview-container, .month-day-display, .employee-list, .section-container');
-                elementsToRemove.forEach(el => el.remove());
-
-                // Get selected date parts
-                const selectedDate = document.getElementById('datePicker').value;
-                const [selectedDay, selectedMonth] = selectedDate.split('/').map(Number);
-
-                // Filter and sort employees - those with "qızı" in name come first
-                birthdayEmployees = jsonData.filter(row => {
-                    if (!row.ДатаР2) return false;
-
-                    // Convert to string in case it's a date object or number
-                    const dateStr = row.ДатаР2.toString().trim();
-
-                    // Handle different date formats
-                    let day, month;
-
-                    // Format: DD.MM.YYYY (14.06.1980)
-                    if (dateStr.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
-                        const parts = dateStr.split('.');
-                        day = parseInt(parts[0], 11);
-                        month = parseInt(parts[1], 10);
-                    }
-                    // Format: YYYY-MM-DD (if dates come as ISO strings)
-                    else if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
-                        const parts = dateStr.split('-');
-                        day = parseInt(parts[2], 11);
-                        month = parseInt(parts[1], 11);
-                    }
-                    // If it's an Excel serial date number (unlikely but possible)
-                    else if (!isNaN(dateStr)) {
-                        const date = new Date((parseFloat(dateStr) - 25569) * 86400 * 1000);
-                        day = date.getDate();
-                        month = date.getMonth() + 1;
-                    } else {
-                        console.warn("Unrecognized date format:", dateStr);
-                        return false;
-                    }
-
-                    return day === selectedDay && month === selectedMonth;
-                }).sort((a, b) => {
-                    // Check if name ends with "qızı" (case insensitive)
-                    const aName = (a.ссылка || '').toString().toLowerCase();
-                    const bName = (b.ссылка || '').toString().toLowerCase();
-                    
-                    const aHasQizi = aName.endsWith('qızı');
-                    const bHasQizi = bName.endsWith('qızı');
-                    
-                    if (aHasQizi && !bHasQizi) return -1;
-                    if (!aHasQizi && bHasQizi) return 1;
-                    return 0; // Keep original order if both have or don't have "qızı"
-                });
-
-                // Create and populate section divs
-                const sectionContainer = document.createElement('div');
-                sectionContainer.className = 'section-container';
-
-                for (let i = 0; i < 5; i++) {
-                    const sectionDiv = document.createElement('div');
-                    sectionDiv.className = 'section-div' + (i >= birthdayEmployees.length ? ' empty' : '');
-                    sectionDiv.id = `section-${i + 1}`;
-
-                    if (i < birthdayEmployees.length) {
-                        const employee = birthdayEmployees[i];
-                        const name = fixTurkishCharacters(employee.ссылка);
-                        const jobOriginal = fixTurkishCharacters(employee.Department || '').trim();
-                        const jobLines = transformDepartment(jobOriginal);
-
-                        sectionDiv.innerHTML = `
-                            <h3>${name || 'Name not available'}</h3>
-                            <div>${jobLines.join('<br>')}</div>
-                        `;
-                    } else {
-                        sectionDiv.innerHTML = `<h3>Section ${i + 1}</h3>`;
-                    }
-
-                    sectionContainer.appendChild(sectionDiv);
-                }
-
-                resultContainer.appendChild(sectionContainer);
-
-                if (birthdayEmployees.length === 0) {
-                    resultContainer.innerHTML += '<p>No employees found with birthdays on this date</p>';
-                    return;
-                }
-
-                // Display month and day
-                const monthNames = ["YANVAR", "FEVRAL", "MART", "APREL", "MAY", "İYUN",
-                    "İYUL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
-                const monthName = monthNames[selectedMonth - 1];
-
-                const monthDayDisplay = document.createElement('div');
-                monthDayDisplay.className = 'month-day-display';
-                monthDayDisplay.innerHTML = `
-                    <div class="Section-month">${monthName}</div>
-                    <div class="Section-day">${selectedDay}</div>
-                `;
-                resultContainer.appendChild(monthDayDisplay);
-
-                // Set day rotation based on month
-                const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
-                const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
-
-                if (highRotationMonths.includes(monthName)) {
-                    dayRotation = 1.4;
-                } else if (lowRotationMonths.includes(monthName)) {
-                    dayRotation = 1.8;
-                }
-
-                // Create anniversary selector and position controls
-                createAnniversarySelector();
-                createPositionControls();
-                createTextPositionControls();
-
-                try {
-                    canvasBgImage = await loadImage('./assets/img/canva.png');
-                    generateFinalImage();
-                } catch (error) {
-                    console.error("Error loading canvas background:", error);
-                    alert("Failed to load canvas background image");
-                }
-            };
-
-            reader.readAsArrayBuffer(file);
-        }
-
+       
         async function generateFinalImage() {
             if (!canvasBgImage || !selectedAnniversaryImage) return;
 
@@ -763,15 +984,9 @@
                     link.click();
                 };
 
-                const shareBtn = document.createElement('button');
-                shareBtn.className = 'share-btn';
-                shareBtn.textContent = 'Share via Email';
-                shareBtn.onclick = () => {
-                    document.getElementById('emailModal').style.display = 'block';
-                };
-
+  
                 buttonGroup.appendChild(downloadBtn);
-                buttonGroup.appendChild(shareBtn);
+        
 
                 document.querySelector('.preview-container')?.remove();
                 previewContainer.appendChild(previewImg);
@@ -802,106 +1017,6 @@
                 img.src = src;
             });
         }
-
-        // Initialize modal functionality
-        document.addEventListener('DOMContentLoaded', function () {
-            const modal = document.getElementById('emailModal');
-            const closeBtn = document.querySelector('.close');
-            const cancelBtn = document.getElementById('cancelEmail');
-            const sendBtn = document.getElementById('sendEmail');
-
-            // Close modal when clicking X or cancel button
-            closeBtn.onclick = function () {
-                modal.style.display = 'none';
-            }
-            cancelBtn.onclick = function () {
-                modal.style.display = 'none';
-            }
-
-            // Close modal when clicking outside
-            window.onclick = function (event) {
-                if (event.target == modal) {
-                    modal.style.display = 'none';
-                }
-            }
-
-            // Handle send email button
-           sendBtn.onclick = function() {
-    const emails = [];
-    
-    // 1. Get checked emails
-    document.querySelectorAll('.email-option input[type="checkbox"]:checked').forEach(checkbox => {
-        const email = checkbox.nextElementSibling.textContent.trim();
-        emails.push(email);
-    });
-
-    // 2. Get additional emails
-    const additionalEmails = document.getElementById('additionalEmails').value
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email !== '');
-
-    // 3. Validate emails
-    for (const email of additionalEmails) {
-        if (!email.endsWith('@absheronport.az')) {
-            alert(`Error: ${email} must end with @absheronport.az`);
-            return;
-        }
-    }
-
-    // 4. Combine emails
-    const allEmails = [...emails, ...additionalEmails];
-    if (allEmails.length === 0) {
-        alert('Please select at least one email address.');
-        return;
-    }
-
-    // 5. Create canvas with original size
-    const img = new Image();
-    img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // 6. Convert canvas to downloadable PNG
-        canvas.toBlob(function(blob) {
-            const a = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            
-            // Set filename
-            const monthName = document.querySelector('.Section-month').textContent;
-            const day = document.querySelector('.Section-day').textContent;
-            const filename = `Birthday_${monthName}_${day}.png`;
-            
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            
-            // Clean up
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-            
-            // 7. Open Outlook (blank body = auto-adds signature)
-            const subject = `Birthday Greetings - ${monthName} ${day}`;
-            const mailtoLink = `mailto:${allEmails.join(',')}?subject=${encodeURIComponent(subject)}`;
-            window.location.href = mailtoLink;
-            
-            // 8. Show instructions
-            alert("1. Image downloaded.\n2. Outlook opened (signature auto-added).\n3. Manually attach the image.");
-            
-            // 9. Close modal
-            modal.style.display = 'none';
-        }, 'image/png');
-    };
-    img.src = currentCanvasDataURL;
-};
-        });
     </script>
 </body>
 

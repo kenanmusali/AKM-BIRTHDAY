@@ -1,5 +1,27 @@
 {
   "dependencies": {
-    "@vercel/blob": "^1.1.1"
-  }
+    "@vercel/blob": "^1.1.1",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+     "formidable": "^2.1.1"
+  },
+  "name": "birthday",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kenanmusali/AKM-BIRTHDAY.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kenanmusali/AKM-BIRTHDAY/issues"
+  },
+  "homepage": "https://github.com/kenanmusali/AKM-BIRTHDAY#readme"
 }
