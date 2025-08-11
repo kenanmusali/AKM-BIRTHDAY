@@ -55,7 +55,7 @@ async function uploadExcelFile() {
     const file = fileInput.files[0];
     
     try {
-        uploadStatus.textContent = 'Getting upload URL...';
+        uploadStatus.textContent = 'Preparing upload...';
         uploadStatus.style.color = 'black';
 
         // 1. Get signed upload URL
@@ -66,13 +66,13 @@ async function uploadExcelFile() {
             },
             body: JSON.stringify({
                 fileName: file.name,
-                fileType: file.type,
+                fileType: file.type || 'application/octet-stream',
                 folderPath: 'docs/'
             })
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({}));
             throw new Error(error.error || 'Failed to get upload URL');
         }
 
@@ -80,17 +80,21 @@ async function uploadExcelFile() {
 
         // 2. Upload file directly to Blob storage
         uploadStatus.textContent = 'Uploading file...';
+        
+        // Read file as ArrayBuffer
+        const fileBuffer = await file.arrayBuffer();
+        
         const uploadResponse = await fetch(uploadUrl, {
             method: 'PUT',
-            body: file,
+            body: fileBuffer,
             headers: {
-                'Content-Type': file.type,
-                'x-vercel-digest': 'placeholder' // Required header
+                'Content-Type': file.type || 'application/octet-stream',
+                'x-vercel-digest': await calculateDigest(fileBuffer) // Important!
             },
         });
 
         if (!uploadResponse.ok) {
-            throw new Error('File upload failed');
+            throw new Error(`Upload failed with status ${uploadResponse.status}`);
         }
 
         // 3. Confirm upload in your system
@@ -122,6 +126,15 @@ async function uploadExcelFile() {
         console.error('Upload failed:', error);
     }
 }
+
+// Helper function to calculate SHA-1 digest
+async function calculateDigest(buffer) {
+    const hashBuffer = await crypto.subtle.digest('SHA-1', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+   
+   
    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

@@ -37,7 +37,6 @@ body {
 
 
 .download-btn:hover {
-  background: var(--success-hover);
   transform: translateY(-2px);
 }
 
@@ -83,6 +82,7 @@ body {
   border-radius: var(--border-radius);
   position: relative;
   z-index: 10;
+  width: fit-content !important;
 }
 
 .anniversary-options {
@@ -272,11 +272,14 @@ body {
         .preview-container {
             margin-top: 20px;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: start;
         }
 
         .preview-image {
-            max-width: 100%;
-            border: 1px solid #ddd;
+            max-width: 800px;
+            width: 100%;
             border-radius: 5px;
         }
 
