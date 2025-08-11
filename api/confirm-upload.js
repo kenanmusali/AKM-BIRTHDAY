@@ -1,33 +1,29 @@
-import { createWriteStream } from 'fs';
-import { join } from 'path';
-
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        const fileData = await req.body;
-        const fileName = req.headers['x-file-name'] || `upload-${Date.now()}.xls`;
-        const filePath = join(process.cwd(), 'assets', 'docs', fileName);
+        const { filePath, fileName } = req.body;
+        
+        // In a real implementation, you would store this in a database
+        // For now, we'll just log it
+        console.log('File upload confirmed:', {
+            filePath,
+            fileName,
+            uploadedAt: new Date().toISOString()
+        });
 
-        const fileStream = createWriteStream(filePath);
-        fileData.pipe(fileStream);
-
-        return new Promise((resolve, reject) => {
-            fileStream.on('finish', () => {
-                res.status(200).json({ message: 'File uploaded successfully', fileName });
-                resolve();
-            });
-            
-            fileStream.on('error', (error) => {
-                console.error('File upload error:', error);
-                res.status(500).json({ message: 'File upload failed' });
-                reject(error);
-            });
+        return res.status(200).json({ 
+            success: true,
+            filePath,
+            fileName
         });
     } catch (error) {
-        console.error('Upload error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Error confirming upload:', error);
+        return res.status(500).json({ 
+            error: 'Error confirming upload',
+            details: error.message 
+        });
     }
 }

@@ -15,11 +15,13 @@
         <div class="control-group">
             <label for="excelFile">Excel File</label>
             <input type="file" id="excelFile" accept=".xlsx, .xls">
+            
+            <p>or Choose from the list</p>
+
             <div class="excel-file-list" id="excelFileList">
                 Loading available Excel files...
             </div>
         </div>
-
         <div class="control-group">
             <label for="excelFileUpload">Upload Excel File</label>
             <input type="file" id="excelFileUpload" accept=".xlsx, .xls">
@@ -39,77 +41,90 @@
 
     <div id="resultContainer"></div>
 
-<script>
-    async function uploadExcelFile() {
-        const fileInput = document.getElementById('excelFileUpload');
-        const uploadStatus = document.getElementById('uploadStatus');
-        
-        if (!fileInput.files || fileInput.files.length === 0) {
-            uploadStatus.textContent = 'Please select a file first';
-            uploadStatus.style.color = 'red';
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const folderPath = 'assets/docs/'; // Specify your folder path here
-        
-        try {
-            uploadStatus.textContent = 'Preparing upload...';
-            uploadStatus.style.color = 'black';
-
-            // Get upload URL with folder path
-            const { url, filePath } = await fetch('/api/get-upload-url', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    fileName: file.name,
-                    fileType: file.type,
-                    folderPath: folderPath // Send folder path to API
-                })
-            }).then(res => res.json());
-
-            // Upload file
-            uploadStatus.textContent = 'Uploading file...';
-            const uploadResponse = await fetch(url, {
-                method: 'PUT',
-                body: file,
-                headers: {
-                    'Content-Type': file.type,
-                },
-            });
-
-            if (!uploadResponse.ok) throw new Error('File upload failed');
-
-            // Confirm upload
-            uploadStatus.textContent = 'Finalizing...';
-            const dbResponse = await fetch('/api/confirm-upload', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    filePath, // Full path including folder
-                    fileName: file.name,
-                    size: file.size,
-                    type: file.type
-                })
-            });
-
-            if (!dbResponse.ok) throw new Error('Failed to store file reference');
-
-            uploadStatus.textContent = 'File uploaded successfully to ' + folderPath;
-            uploadStatus.style.color = 'green';
-            loadExcelFiles();
-            
-        } catch (error) {
-            uploadStatus.textContent = `Error: ${error.message}`;
-            uploadStatus.style.color = 'red';
-            console.error('Upload error:', error);
-        }
+    <script>
+async function uploadExcelFile() {
+    const fileInput = document.getElementById('excelFileUpload');
+    const uploadStatus = document.getElementById('uploadStatus');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        uploadStatus.textContent = 'Please select a file first';
+        uploadStatus.style.color = 'red';
+        return;
     }
-</script>
+
+    const file = fileInput.files[0];
+    const folderPath = 'docs/'; // Changed from assets/docs/ to just docs/
+    
+    try {
+        uploadStatus.textContent = 'Preparing upload...';
+        uploadStatus.style.color = 'black';
+
+        // 1. First get the upload URL
+        const uploadUrlResponse = await fetch('/api/get-upload-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                fileName: file.name,
+                fileType: file.type,
+                folderPath: folderPath
+            })
+        });
+
+        // Add proper error handling for the response
+        if (!uploadUrlResponse.ok) {
+            const errorText = await uploadUrlResponse.text();
+            throw new Error(`Server error: ${errorText}`);
+        }
+
+        const { url, filePath } = await uploadUrlResponse.json();
+
+        // 2. Upload the file to the obtained URL
+        uploadStatus.textContent = 'Uploading file...';
+        const uploadResponse = await fetch(url, {
+            method: 'PUT',
+            body: file,
+            headers: {
+                'Content-Type': file.type,
+            },
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('File upload to storage failed');
+        }
+
+        // 3. Confirm the upload
+        uploadStatus.textContent = 'Finalizing...';
+        const dbResponse = await fetch('/api/confirm-upload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                filePath,
+                fileName: file.name,
+                size: file.size,
+                type: file.type
+            })
+        });
+
+        if (!dbResponse.ok) {
+            const errorText = await dbResponse.text();
+            throw new Error(`Database error: ${errorText}`);
+        }
+
+        uploadStatus.textContent = 'File uploaded successfully!';
+        uploadStatus.style.color = 'green';
+        loadExcelFiles();
+        
+    } catch (error) {
+        uploadStatus.textContent = `Error: ${error.message}`;
+        uploadStatus.style.color = 'red';
+        console.error('Full upload error:', error);
+    }
+}
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
