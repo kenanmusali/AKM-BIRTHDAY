@@ -34,8 +34,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Generate new filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '_');
+    // Generate new filename
+    const timestamp = new Date().toLocaleString('az-AZ', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }).replace(/[/:, ]/g, '_');
+    
     const newFilename = `${fs.readdirSync(uploadDir).length + 1}. ${timestamp} - ${file.originalFilename}`;
     const newPath = path.join(uploadDir, newFilename);
 

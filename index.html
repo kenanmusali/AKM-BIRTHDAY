@@ -207,55 +207,46 @@ async function loadExcelFiles() {
 
   try {
     // First fetch the JSON file list
-    const listResponse = await fetch('assets/docs/excel-files.json');
+    const listResponse = await fetch('/assets/docs/excel-files.json');
     if (!listResponse.ok) throw new Error('Failed to load file list');
     
     const excelFiles = await listResponse.json();
     excelFileList.innerHTML = '';
 
     if (excelFiles.length === 0) {
-      excelFileList.innerHTML = 'No Excel files found in assets/docs folder';
+      excelFileList.innerHTML = 'No Excel files found';
       return;
     }
 
-    // Now process each file from the real list
     excelFiles.forEach(file => {
       const fileItem = document.createElement('div');
       fileItem.className = 'excel-file-item';
       fileItem.textContent = file;
 
       fileItem.onclick = async function() {
-        // Remove selection from all items
         document.querySelectorAll('.excel-file-item').forEach(item => {
           item.classList.remove('selected');
         });
-        
-        // Add selection to clicked item
         this.classList.add('selected');
         
         try {
-          // Fetch the actual Excel file from assets/docs
-          const fileUrl = `assets/docs/${file}`;
+          // Update path to use root-relative URL
+          const fileUrl = `/assets/docs/${encodeURIComponent(file)}`;
           const fileResponse = await fetch(fileUrl);
           
           if (!fileResponse.ok) throw new Error(`HTTP error! status: ${fileResponse.status}`);
           
           const arrayBuffer = await fileResponse.arrayBuffer();
-          
-          // Process the actual Excel file
           const workbook = XLSX.read(arrayBuffer, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(firstSheet);
           
-          // Store the data for later use
           window.currentExcelData = {
             filename: file,
             data: jsonData
           };
           
-          // Update status
           excelFileList.innerHTML = `<div class="excel-file-item selected">${file} (loaded)</div>`;
-          
         } catch (error) {
           console.error('Error loading Excel file:', error);
           excelFileList.innerHTML = `<div class="excel-file-item error">Error loading ${file}</div>`;
@@ -264,7 +255,6 @@ async function loadExcelFiles() {
 
       excelFileList.appendChild(fileItem);
     });
-
   } catch (error) {
     excelFileList.innerHTML = 'Error loading file list: ' + error.message;
     console.error('Error:', error);
@@ -484,6 +474,13 @@ async function uploadExcelFile() {
             body: formData
         });
         
+        // First check if response is OK
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Server error: ${response.status} - ${text}`);
+        }
+        
+        // Then try to parse as JSON
         const result = await response.json();
         
         if (result.success) {
@@ -497,9 +494,6 @@ async function uploadExcelFile() {
         console.error('Upload error:', error);
     }
 }
-
-
-
 
 
 
