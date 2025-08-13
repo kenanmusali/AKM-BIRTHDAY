@@ -236,6 +236,9 @@ body {
         .control-group {
             margin-bottom: 15px;
         }
+.upload {
+  display: none;
+}
 
         label {
             display: block;
