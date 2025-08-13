@@ -8,6 +8,7 @@
                 "Koordinasiya şöbəsi / Sertifikatlaşdırma bölməsi",
                 "Mühasibatlıq şöbəsi",
                 "MB Broker",
+                "Əməliyyat şöbəsi",
                 "Mühasibatlıq şöbəsi / Kassa - hesablaşmalar bölməsi",
                 "Satış şöbəsi",
             ];
