@@ -2,7 +2,7 @@
             const selectorDiv = document.createElement('div');
             selectorDiv.className = 'anniversary-selector';
             selectorDiv.innerHTML = `
-                <h3>Select Anniversary Image (1-11.png)</h3>
+                <h3>Select Anniversary Image (1-12.png)</h3>
                 <div class="anniversary-options" id="anniversaryOptions"></div>
             `;
 
@@ -16,7 +16,7 @@
             const optionsContainer = document.getElementById('anniversaryOptions');
 
             // Load preview images (preview1.png to preview11.png)
-            for (let i = 1; i <= 11; i++) {
+            for (let i = 1; i <= 12; i++) {
                 const option = document.createElement('img');
                 option.className = 'anniversary-option';
                 option.src = `./assets/img/preview${i}.png`; // Show preview image
