@@ -19,6 +19,8 @@
                 return ["Daxili daşımalar departamenti"];
             } else if (jobOriginal.startsWith("Təhlükəsizlik şöbəsi / Elektrik təminatı və Təmir bölməsi")) {
                 return ["Təhlükəsizlik şöbəsi"];
+            } else if (jobOriginal.startsWith("ƏKTD / Sistem əməliyyaları şöbəsi (UDPAS)")) {
+                return ["ƏKTD / Sistem əməliyyaları şöbəsi"];
             } else if (jobOriginal.startsWith("İRİD/İstedadların cəlbi və idarə olunması şöbəsi")) {
                 return ["İRİD / İstedadların cəlbi və idarə olunması Ş."];
             } else if (jobOriginal.startsWith("ƏKTD / Anbar əməliyyatları şöbəsi (WMS)")) {
