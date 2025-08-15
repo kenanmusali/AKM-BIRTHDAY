@@ -2,7 +2,7 @@
 document.write('<style id="pinHideStyle">*{display:none !important;}</style>');
 
 (function requestPIN() {
-    const correctPIN = "@53626";
+    const correctPIN = "053626";
     const storageKey = "pinExpiration";
     const validDuration = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
