@@ -27,7 +27,8 @@
                 return ["ƏKTD / Anbar əməliyyatları şöbəsi"];
             } else if (jobOriginal.startsWith("Əməliyyat şöbəsi")) {
                 return ["Abşeron Express"];
-
+            } else if (jobOriginal.startsWith("İRİD / İnsan resursları və inzibati departament")) {
+                return ["İRİD / İnsan resursları və inzibati D."];
                 
             } else if (jobReplaceList.some(prefix => jobOriginal.startsWith(prefix))) {
                 return ["MB BROKER"];
