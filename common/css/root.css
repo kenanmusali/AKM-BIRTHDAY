@@ -9,10 +9,11 @@
     padding: 0;
     box-sizing: border-box;
     font-family: "Inter", sans-serif !important;
+    
 }
 
 body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', sans-serif !important;
     width: 100%;
     height: 100%;
 }
