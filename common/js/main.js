@@ -1,125 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Birthday Post Generator</title>
-    <link rel="stylesheet" href="./common/css/root.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        .employee-controls {
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .employee-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            margin-bottom: 8px;
-            background-color: white;
-            border: 1px solid #eee;
-            border-radius: 4px;
-        }
-        
-        .employee-info {
-            flex-grow: 1;
-        }
-        
-        .employee-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        
-        .btn-up {
-            background-color: #4CAF50;
-            color: white;
-        }
-        
-        .btn-down {
-            background-color: #2196F3;
-            color: white;
-        }
-        
-        .btn-delete {
-            background-color: #f44336;
-            color: white;
-        }
-        
-        .btn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        
-        .drag-handle {
-            cursor: move;
-            margin-right: 10px;
-            font-size: 18px;
-        }
-        
-        #result {
-            display: block !important;
-            visibility: visible !important;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="control-panel">
-        <div class="control-group">
-            <label for="excelFile">Excel File</label>
-            <input type="file" id="excelFile" accept=".xlsx, .xls">
-
-            <p>or Choose from the list</p>
-
-            <div class="excel-file-list" id="excelFileList">
-                Loading available Excel files...
-            </div>
-        </div>
-        <div class="control-group upload">
-            <label for="excelFileUpload">Upload Excel File</label>
-            <input type="file" id="excelFileUpload" accept=".xlsx, .xls">
-        </div>
-
-        <div class="control-group">
-            <label for="datePicker">Birthday Date</label>
-            <input type="text" id="datePicker" placeholder="DD/MM">
-        </div>
-        <button id="processBtn">Generate Birthday Post</button>
-    </div>
-    
-    <div class="control-group">
-        <div id="result"></div>
-    </div>
-    
-    <div id="resultContainer"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-
-    <script>
-        // Global variable to store current employee list
         let currentEmployeeList = [];
         let originalProcessExcelData = null;
+        let selectedAnniversaryImage = null;
+        let canvasBgImage = null;
+        let birthdayEmployees = [];
+        let currentX = -600;
+        let currentY = 531;
+        let monthX = 530;
+        let monthY = -165;
+        let monthRotation = 1.1;
+        let dayX = 465;
+        let dayY = 71;
+        let dayRotation = 1.4;
+        let imageZIndex = 999;
+        let currentCanvasDataURL = '';
         
-        // Wait for the original processExcelData to be loaded
         function waitForProcessExcelData() {
             if (typeof processExcelData !== 'undefined') {
                 originalProcessExcelData = processExcelData;
@@ -129,25 +23,19 @@
             }
         }
         
-        // Override the processExcelData function
         function overrideProcessExcelData() {
-            // Create a new function that wraps the original
             const newProcessExcelData = async function(arrayBuffer, selectedDate) {
-                // Call the original function first
                 await originalProcessExcelData(arrayBuffer, selectedDate);
                 
-                // Extract employees from the result container
                 extractEmployeesFromResultContainer();
                 
-                // Now add our employee management functionality
                 displayEmployeeList();
+                createManualAddSection();
             };
             
-            // Replace the original function
             window.processExcelData = newProcessExcelData;
         }
         
-        // Function to extract employees from result container
         function extractEmployeesFromResultContainer() {
             const resultContainer = document.getElementById('resultContainer');
             if (!resultContainer) return;
@@ -170,19 +58,19 @@
                     });
                 }
             });
-            
             console.log('Extracted employees:', currentEmployeeList);
         }
         
-        // Function to display employee list with controls
         function displayEmployeeList() {
             const resultDiv = document.getElementById('result');
             if (!resultDiv) return;
             
             resultDiv.innerHTML = '';
             
+            createManualAddSection();
+            
             if (!currentEmployeeList || currentEmployeeList.length === 0) {
-                resultDiv.innerHTML = '<p>No employees found. Process an Excel file first.</p>';
+                resultDiv.innerHTML += '<p>No employees found. Process an Excel file first or add employees manually.</p>';
                 return;
             }
             
@@ -232,14 +120,65 @@
             controlsContainer.appendChild(listContainer);
             resultDiv.appendChild(controlsContainer);
             
-            // Make sure the result div is visible
             resultDiv.style.display = 'block';
             resultDiv.style.visibility = 'visible';
             
             console.log('Employee list displayed');
         }
 
-        // Drag and drop variables
+        function createManualAddSection() {
+            const resultDiv = document.getElementById('result');
+            if (!resultDiv) return;
+            
+            let manualAddSection = document.querySelector('.manual-add-section');
+            
+            if (!manualAddSection) {
+                manualAddSection = document.createElement('div');
+                manualAddSection.className = 'manual-add-section';
+                manualAddSection.innerHTML = `
+                    <h3>Add Employee Manually</h3>
+                    <div class="form-group">
+                        <label for="employeeName">Employee Name</label>
+                        <input type="text" id="employeeName" placeholder="Enter employee name">
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeDepartment">Department</label>
+                        <input type="text" id="employeeDepartment" placeholder="Enter department">
+                    </div>
+                    <button class="manual-add-btn" id="addEmployeeBtn">Add Employee to Canvas</button>
+                `;
+                
+                resultDiv.insertBefore(manualAddSection, resultDiv.firstChild);
+                
+                document.getElementById('addEmployeeBtn').addEventListener('click', addEmployeeManually);
+            }
+        }
+
+        function addEmployeeManually() {
+            const nameInput = document.getElementById('employeeName');
+            const departmentInput = document.getElementById('employeeDepartment');
+            
+            const name = nameInput.value.trim();
+            const department = departmentInput.value.trim();
+            
+            if (!name) {
+                alert('Please enter an employee name');
+                return;
+            }
+            
+            currentEmployeeList.push({
+                'ссылка': name,
+                'Department': department
+            });
+            
+            nameInput.value = '';
+            departmentInput.value = '';
+            
+            updateUI();
+            
+            console.log('Added employee manually:', name, department);
+        }
+
         let draggedItem = null;
 
         function handleDragStart(e) {
@@ -261,11 +200,9 @@
                 const fromIndex = parseInt(draggedItem.dataset.index);
                 const toIndex = parseInt(this.dataset.index);
                 
-                // Reorder the array
                 const [movedItem] = currentEmployeeList.splice(fromIndex, 1);
                 currentEmployeeList.splice(toIndex, 0, movedItem);
                 
-                // Update the UI
                 updateUI();
             }
             return false;
@@ -275,53 +212,40 @@
             this.style.opacity = '1';
         }
 
-        // Function to move employee up in the list
         function moveEmployeeUp(index) {
             if (index <= 0) return;
             
-            // Swap employees in the array
             [currentEmployeeList[index], currentEmployeeList[index - 1]] = 
             [currentEmployeeList[index - 1], currentEmployeeList[index]];
             
-            // Update the UI
             updateUI();
         }
 
-        // Function to move employee down in the list
         function moveEmployeeDown(index) {
             if (index >= currentEmployeeList.length - 1) return;
             
-            // Swap employees in the array
             [currentEmployeeList[index], currentEmployeeList[index + 1]] = 
             [currentEmployeeList[index + 1], currentEmployeeList[index]];
             
-            // Update the UI
             updateUI();
         }
 
-        // Function to delete an employee from the list
         function deleteEmployee(index) {
             currentEmployeeList.splice(index, 1);
             
-            // Update the UI
             updateUI();
         }
 
-        // Function to update the UI with current employee list
         function updateUI() {
-            // Update the employee list display
             displayEmployeeList();
             
-            // Update the section container in resultContainer
             updateSectionContainer();
             
-            // Regenerate the final image
             if (typeof generateFinalImage === 'function') {
                 generateFinalImage();
             }
         }
 
-        // Function to update the section container with current employee list
         function updateSectionContainer() {
             const resultContainer = document.getElementById('resultContainer');
             if (!resultContainer) return;
@@ -333,10 +257,8 @@
                 return;
             }
             
-            // Clear existing sections
             sectionContainer.innerHTML = '';
             
-            // Recreate sections with current employee list
             for (let i = 0; i < 5; i++) {
                 const sectionDiv = document.createElement('div');
                 sectionDiv.className = 'section-div' + (i >= currentEmployeeList.length ? ' empty' : '');
@@ -362,67 +284,60 @@
             console.log('Section container updated');
         }
         
-        // Make functions globally available
         window.moveEmployeeUp = moveEmployeeUp;
         window.moveEmployeeDown = moveEmployeeDown;
         window.deleteEmployee = deleteEmployee;
+        window.addEmployeeManually = addEmployeeManually;
         
-        // Start waiting for the original processExcelData function
         waitForProcessExcelData();
-    </script>
-    
-</body>
-</html>
 
-function createAnniversarySelector() {
-    const selectorDiv = document.createElement('div');
-    selectorDiv.className = 'anniversary-selector';
-    selectorDiv.innerHTML = `
+        function createAnniversarySelector() {
+            const selectorDiv = document.createElement('div');
+            selectorDiv.className = 'anniversary-selector';
+            selectorDiv.innerHTML = `
                 <h3>Select Anniversary Image (1-12.png)</h3>
                 <div class="anniversary-options" id="anniversaryOptions"></div>
             `;
 
-    const existingSelector = document.querySelector('.anniversary-selector');
-    if (existingSelector) {
-        existingSelector.replaceWith(selectorDiv);
-    } else {
-        document.getElementById('resultContainer').appendChild(selectorDiv);
-    }
+            const existingSelector = document.querySelector('.anniversary-selector');
+            if (existingSelector) {
+                existingSelector.replaceWith(selectorDiv);
+            } else {
+                document.getElementById('resultContainer').appendChild(selectorDiv);
+            }
 
-    const optionsContainer = document.getElementById('anniversaryOptions');
+            const optionsContainer = document.getElementById('anniversaryOptions');
 
-    // Load preview images (preview1.png to preview11.png)
-    for (let i = 1; i <= 12; i++) {
-        const option = document.createElement('img');
-        option.className = 'anniversary-option';
-        option.src = `./assets/img/preview${i}.png`; // Show preview image
-        option.dataset.number = i;
-        option.onclick = function () {
-            document.querySelectorAll('.anniversary-option').forEach(el => {
-                el.classList.remove('selected');
-            });
-            this.classList.add('selected');
-            // Use the corresponding original image (1.png to 11.png)
-            selectedAnniversaryImage = `./assets/img/${i}.png`;
-            generateFinalImage();
-        };
-        option.onerror = function () {
-            this.remove();
-        };
+            for (let i = 1; i <= 12; i++) {
+                const option = document.createElement('img');
+                option.className = 'anniversary-option';
+                option.src = `./assets/img/preview${i}.png`; // Show preview image
+                option.dataset.number = i;
+                option.onclick = function () {
+                    document.querySelectorAll('.anniversary-option').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    selectedAnniversaryImage = `./assets/img/${i}.png`;
+                    generateFinalImage();
+                };
+                option.onerror = function () {
+                    this.remove();
+                };
 
-        optionsContainer.appendChild(option);
-    }
+                optionsContainer.appendChild(option);
+            }
 
-    // Select the first image by default if available
-    if (optionsContainer.firstChild) {
-        optionsContainer.firstChild.click();
-    }
-}
+            // Select the first image by default if available
+            if (optionsContainer.firstChild) {
+                optionsContainer.firstChild.click();
+            }
+        }
 
-function createPositionControls() {
-    const controlsDiv = document.createElement('div');
-    controlsDiv.className = 'position-controls';
-    controlsDiv.innerHTML = `
+        function createPositionControls() {
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'position-controls';
+            controlsDiv.innerHTML = `
                 <h3>Adjust Employee Sections Position</h3>
                 <div style="display: flex; gap: 15px; margin-top: 10px;">
                     <div class="control-group">
@@ -439,46 +354,46 @@ function createPositionControls() {
                 </div>
             `;
 
-    const existingControls = document.querySelector('.position-controls');
-    if (existingControls) {
-        existingControls.replaceWith(controlsDiv);
-    } else {
-        document.getElementById('resultContainer').appendChild(controlsDiv);
-    }
+            const existingControls = document.querySelector('.position-controls');
+            if (existingControls) {
+                existingControls.replaceWith(controlsDiv);
+            } else {
+                document.getElementById('resultContainer').appendChild(controlsDiv);
+            }
 
-    const xSlider = document.getElementById('xPosition');
-    const ySlider = document.getElementById('yPosition');
-    const xValue = document.getElementById('xValue');
-    const yValue = document.getElementById('yValue');
-    const resetBtn = document.getElementById('resetPosition');
+            const xSlider = document.getElementById('xPosition');
+            const ySlider = document.getElementById('yPosition');
+            const xValue = document.getElementById('xValue');
+            const yValue = document.getElementById('yValue');
+            const resetBtn = document.getElementById('resetPosition');
 
-    xSlider.addEventListener('input', function () {
-        currentX = parseInt(this.value);
-        xValue.textContent = `${currentX}px`;
-        generateFinalImage();
-    });
+            xSlider.addEventListener('input', function () {
+                currentX = parseInt(this.value);
+                xValue.textContent = `${currentX}px`;
+                generateFinalImage();
+            });
 
-    ySlider.addEventListener('input', function () {
-        currentY = parseInt(this.value);
-        yValue.textContent = `${currentY}px`;
-        generateFinalImage();
-    });
+            ySlider.addEventListener('input', function () {
+                currentY = parseInt(this.value);
+                yValue.textContent = `${currentY}px`;
+                generateFinalImage();
+            });
 
-    resetBtn.addEventListener('click', function () {
-        currentX = -600;
-        currentY = 531;
-        xSlider.value = currentX;
-        ySlider.value = currentY;
-        xValue.textContent = `${currentX}px`;
-        yValue.textContent = `${currentY}px`;
-        generateFinalImage();
-    });
-}
+            resetBtn.addEventListener('click', function () {
+                currentX = -600;
+                currentY = 531;
+                xSlider.value = currentX;
+                ySlider.value = currentY;
+                xValue.textContent = `${currentX}px`;
+                yValue.textContent = `${currentY}px`;
+                generateFinalImage();
+            });
+        }
 
-function createTextPositionControls() {
-    const controlsDiv = document.createElement('div');
-    controlsDiv.className = 'text-position-controls';
-    controlsDiv.innerHTML = `
+        function createTextPositionControls() {
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'text-position-controls';
+            controlsDiv.innerHTML = `
                 <h3>Adjust Text Position</h3>
                 <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
                     <div class="control-group">
@@ -515,573 +430,500 @@ function createTextPositionControls() {
                 </div>
             `;
 
-    const existingControls = document.querySelector('.text-position-controls');
-    if (existingControls) {
-        existingControls.replaceWith(controlsDiv);
-    } else {
-        document.getElementById('resultContainer').appendChild(controlsDiv);
-    }
+            const existingControls = document.querySelector('.text-position-controls');
+            if (existingControls) {
+                existingControls.replaceWith(controlsDiv);
+            } else {
+                document.getElementById('resultContainer').appendChild(controlsDiv);
+            }
 
-    const monthXSlider = document.getElementById('monthX');
-    const monthYSlider = document.getElementById('monthY');
-    const monthRotationSlider = document.getElementById('monthRotation');
-    const dayXSlider = document.getElementById('dayX');
-    const dayYSlider = document.getElementById('dayY');
-    const dayRotationSlider = document.getElementById('dayRotation');
-    const monthXValue = document.getElementById('monthXValue');
-    const monthYValue = document.getElementById('monthYValue');
-    const monthRotationValue = document.getElementById('monthRotationValue');
-    const dayXValue = document.getElementById('dayXValue');
-    const dayYValue = document.getElementById('dayYValue');
-    const dayRotationValue = document.getElementById('dayRotationValue');
-    const resetBtn = document.getElementById('resetTextPosition');
+            const monthXSlider = document.getElementById('monthX');
+            const monthYSlider = document.getElementById('monthY');
+            const monthRotationSlider = document.getElementById('monthRotation');
+            const dayXSlider = document.getElementById('dayX');
+            const dayYSlider = document.getElementById('dayY');
+            const dayRotationSlider = document.getElementById('dayRotation');
+            const monthXValue = document.getElementById('monthXValue');
+            const monthYValue = document.getElementById('monthYValue');
+            const monthRotationValue = document.getElementById('monthRotationValue');
+            const dayXValue = document.getElementById('dayXValue');
+            const dayYValue = document.getElementById('dayYValue');
+            const dayRotationValue = document.getElementById('dayRotationValue');
+            const resetBtn = document.getElementById('resetTextPosition');
 
-    monthXSlider.addEventListener('input', function () {
-        monthX = parseInt(this.value);
-        monthXValue.textContent = `${monthX}px`;
-        generateFinalImage();
-    });
+            monthXSlider.addEventListener('input', function () {
+                monthX = parseInt(this.value);
+                monthXValue.textContent = `${monthX}px`;
+                generateFinalImage();
+            });
 
-    monthYSlider.addEventListener('input', function () {
-        monthY = parseInt(this.value);
-        monthYValue.textContent = `${monthY}px`;
-        generateFinalImage();
-    });
+            monthYSlider.addEventListener('input', function () {
+                monthY = parseInt(this.value);
+                monthYValue.textContent = `${monthY}px`;
+                generateFinalImage();
+            });
 
-    monthRotationSlider.addEventListener('input', function () {
-        monthRotation = parseFloat(this.value);
-        monthRotationValue.textContent = `${monthRotation}°`;
-        generateFinalImage();
-    });
+            monthRotationSlider.addEventListener('input', function () {
+                monthRotation = parseFloat(this.value);
+                monthRotationValue.textContent = `${monthRotation}°`;
+                generateFinalImage();
+            });
 
-    dayXSlider.addEventListener('input', function () {
-        dayX = parseInt(this.value);
-        dayXValue.textContent = `${dayX}px`;
-        generateFinalImage();
-    });
+            dayXSlider.addEventListener('input', function () {
+                dayX = parseInt(this.value);
+                dayXValue.textContent = `${dayX}px`;
+                generateFinalImage();
+            });
 
-    dayYSlider.addEventListener('input', function () {
-        dayY = parseInt(this.value);
-        dayYValue.textContent = `${dayY}px`;
-        generateFinalImage();
-    });
+            dayYSlider.addEventListener('input', function () {
+                dayY = parseInt(this.value);
+                dayYValue.textContent = `${dayY}px`;
+                generateFinalImage();
+            });
 
-    dayRotationSlider.addEventListener('input', function () {
-        dayRotation = parseFloat(this.value);
-        dayRotationValue.textContent = `${dayRotation}°`;
-        generateFinalImage();
-    });
+            dayRotationSlider.addEventListener('input', function () {
+                dayRotation = parseFloat(this.value);
+                dayRotationValue.textContent = `${dayRotation}°`;
+                generateFinalImage();
+            });
 
-    resetBtn.addEventListener('click', function () {
-        monthX = 530;
-        monthY = -165;
-        monthRotation = 1.1;
-        dayX = 465;
-        dayY = 71;
+            resetBtn.addEventListener('click', function () {
+                monthX = 530;
+                monthY = -165;
+                monthRotation = 1.1;
+                dayX = 465;
+                dayY = 71;
 
-        // Reset day rotation based on month
-        const monthName = document.querySelector('.Section-month')?.textContent;
-        const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
-        const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
+                const monthName = document.querySelector('.Section-month')?.textContent;
+                const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
+                const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
 
-        if (highRotationMonths.includes(monthName)) {
-            dayRotation = 1.4;
-        } else if (lowRotationMonths.includes(monthName)) {
-            dayRotation = 1.8;
-        } else {
-            dayRotation = 1.4; // Default
+                if (highRotationMonths.includes(monthName)) {
+                    dayRotation = 1.4;
+                } else if (lowRotationMonths.includes(monthName)) {
+                    dayRotation = 1.8;
+                } else {
+                    dayRotation = 1.4; // Default
+                }
+
+                monthXSlider.value = monthX;
+                monthYSlider.value = monthY;
+                monthRotationSlider.value = monthRotation;
+                dayXSlider.value = dayX;
+                dayYSlider.value = dayY;
+                dayRotationSlider.value = dayRotation;
+                monthXValue.textContent = `${monthX}px`;
+                monthYValue.textContent = `${monthY}px`;
+                monthRotationValue.textContent = `${monthRotation}°`;
+                dayXValue.textContent = `${dayX}px`;
+                dayYValue.textContent = `${dayY}px`;
+                dayRotationValue.textContent = `${dayRotation}°`;
+                generateFinalImage();
+            });
         }
 
-        monthXSlider.value = monthX;
-        monthYSlider.value = monthY;
-        monthRotationSlider.value = monthRotation;
-        dayXSlider.value = dayX;
-        dayYSlider.value = dayY;
-        dayRotationSlider.value = dayRotation;
-        monthXValue.textContent = `${monthX}px`;
-        monthYValue.textContent = `${monthY}px`;
-        monthRotationValue.textContent = `${monthRotation}°`;
-        dayXValue.textContent = `${dayX}px`;
-        dayYValue.textContent = `${dayY}px`;
-        dayRotationValue.textContent = `${dayRotation}°`;
-        generateFinalImage();
-    });
-}
+        function fixTurkishCharacters(text) {
+            if (!text) return text;
+            const replacements = {
+                'İ': 'İ',
+                'ı': 'ı',
+                'i': 'i',
+                'ğ': 'ğ',
+                'Ğ': 'Ğ',
+                'ş': 'ş',
+                'Ş': 'Ş',
+                'ü': 'ü',
+                'Ü': 'Ü',
+                'ö': 'ö',
+                'Ö': 'Ö',
+                'ç': 'ç',
+                'Ç': 'Ç'
+            };
 
-function fixTurkishCharacters(text) {
-    if (!text) return text;
-    const replacements = {
-        'İ': 'İ',
-        'ı': 'ı',
-        'i': 'i',
-        'ğ': 'ğ',
-        'Ğ': 'Ğ',
-        'ş': 'ş',
-        'Ş': 'Ş',
-        'ü': 'ü',
-        'Ü': 'Ü',
-        'ö': 'ö',
-        'Ö': 'Ö',
-        'ç': 'ç',
-        'Ç': 'Ç'
-    };
+            return text.replace(/[İıiğĞşŞüÜöÖçÇ]/g, char => replacements[char] || char);
+        }
 
-    return text.replace(/[İıiğĞşŞüÜöÖçÇ]/g, char => replacements[char] || char);
-}
+        async function generateFinalImage() {
+            if (!canvasBgImage || !selectedAnniversaryImage) return;
 
-async function generateFinalImage() {
-    if (!canvasBgImage || !selectedAnniversaryImage) return;
+            const monthName = document.querySelector('.Section-month')?.textContent;
+            const day = document.querySelector('.Section-day')?.textContent;
 
-    const monthName = document.querySelector('.Section-month')?.textContent;
-    const day = document.querySelector('.Section-day')?.textContent;
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = canvasBgImage.width;
+                canvas.height = canvasBgImage.height;
+                const ctx = canvas.getContext('2d');
 
-    try {
-        const canvas = document.createElement('canvas');
-        canvas.width = canvasBgImage.width;
-        canvas.height = canvasBgImage.height;
-        const ctx = canvas.getContext('2d');
+                ctx.drawImage(canvasBgImage, 0, 0);
 
-        // Draw background
-        ctx.drawImage(canvasBgImage, 0, 0);
+                ctx.save();
+                ctx.translate(canvas.width / 2 + monthX, canvas.height / 2 + monthY);
+                ctx.rotate(monthRotation * Math.PI / 180);
 
-        // Draw month name with rotation
-        ctx.save();
-        ctx.translate(canvas.width / 2 + monthX, canvas.height / 2 + monthY);
-        ctx.rotate(monthRotation * Math.PI / 180);
+                ctx.fillStyle = '#016EE2';
+                ctx.font = 'italic 900 111px Inter';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = '#0346B8';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 5;
+                ctx.shadowOffsetY = 5;
+                ctx.fillText(monthName, 0, 0);
 
-        ctx.fillStyle = '#016EE2';
-        ctx.font = 'italic 900 111px Inter';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#0346B8';
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 5;
-        ctx.shadowOffsetY = 5;
-        ctx.fillText(monthName, 0, 0);
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.fillText(monthName, 0, 0);
 
-        // Add black drop shadow
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.fillText(monthName, 0, 0);
+                ctx.restore();
 
-        ctx.restore();
+                ctx.save();
+                ctx.translate(canvas.width / 2 + dayX, canvas.height / 2 + dayY);
+                ctx.rotate(dayRotation * Math.PI / 180);
 
-        // Draw day with rotation
-        ctx.save();
-        ctx.translate(canvas.width / 2 + dayX, canvas.height / 2 + dayY);
-        ctx.rotate(dayRotation * Math.PI / 180);
+                ctx.fillStyle = '#016EE2';
+                ctx.font = 'italic 900 455.5px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = '#0346B8';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 7;
+                ctx.shadowOffsetY = 7;
+                ctx.fillText(day, 0, 0);
 
-        ctx.fillStyle = '#016EE2';
-        ctx.font = 'italic 900 455.5px Inter';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = '#0346B8';
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 7;
-        ctx.shadowOffsetY = 7;
-        ctx.fillText(day, 0, 0);
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.fillText(day, 0, 0);
 
-        // Add black drop shadow for day
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.fillText(day, 0, 0);
+                ctx.restore();
 
-        ctx.restore();
+                ctx.shadowColor = 'transparent';
 
-        // Reset shadow for employee sections
-        ctx.shadowColor = 'transparent';
+                const startX = (canvas.width - 1054) / 2 + currentX;
+                const startY = currentY;
+                const divWidth = 1054;
+                const divHeight = 207;
+                const gap = 17;
 
-        // Draw employee sections
-        const startX = (canvas.width - 1054) / 2 + currentX;
-        const startY = currentY;
-        const divWidth = 1054;
-        const divHeight = 207;
-        const gap = 17;
+                for (let i = 0; i < 5; i++) {
+                    const employee = currentEmployeeList[i];
+                    const y = startY + (i * (divHeight + gap));
 
-        for (let i = 0; i < 5; i++) {
-            const employee = birthdayEmployees[i];
-            const y = startY + (i * (divHeight + gap));
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 5;
+                    ctx.globalAlpha = employee ? 1 : 0.5;
 
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 5;
-            ctx.globalAlpha = employee ? 1 : 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(startX + 18, y);
+                    ctx.lineTo(startX + divWidth - 18, y);
+                    ctx.quadraticCurveTo(startX + divWidth, y, startX + divWidth, y + 18);
+                    ctx.lineTo(startX + divWidth, y + divHeight - 18);
+                    ctx.quadraticCurveTo(startX + divWidth, y + divHeight, startX + divWidth - 18, y + divHeight);
+                    ctx.lineTo(startX + 18, y + divHeight);
+                    ctx.quadraticCurveTo(startX, y + divHeight, startX, y + divHeight - 18);
+                    ctx.lineTo(startX, y + 18);
+                    ctx.quadraticCurveTo(startX, y, startX + 18, y);
+                    ctx.closePath();
+                    ctx.fill();
 
-            // Draw rounded rectangle
-            ctx.beginPath();
-            ctx.moveTo(startX + 18, y);
-            ctx.lineTo(startX + divWidth - 18, y);
-            ctx.quadraticCurveTo(startX + divWidth, y, startX + divWidth, y + 18);
-            ctx.lineTo(startX + divWidth, y + divHeight - 18);
-            ctx.quadraticCurveTo(startX + divWidth, y + divHeight, startX + divWidth - 18, y + divHeight);
-            ctx.lineTo(startX + 18, y + divHeight);
-            ctx.quadraticCurveTo(startX, y + divHeight, startX, y + divHeight - 18);
-            ctx.lineTo(startX, y + 18);
-            ctx.quadraticCurveTo(startX, y, startX + 18, y);
-            ctx.closePath();
-            ctx.fill();
+                    ctx.shadowColor = 'transparent';
+                    ctx.globalAlpha = 1;
 
-            ctx.shadowColor = 'transparent';
-            ctx.globalAlpha = 1;
+                    if (employee) {
+                        const name = fixTurkishCharacters(employee.ссылка) || 'Name not available';
+                        const jobOriginal = fixTurkishCharacters(employee.Department || '').trim();
+                        const jobLines = transformDepartment(jobOriginal);
 
-            if (employee) {
-                const name = fixTurkishCharacters(employee.ссылка) || 'Name not available';
-                const jobOriginal = fixTurkishCharacters(employee.Department || '').trim();
-                const jobLines = transformDepartment(jobOriginal);
+                        ctx.fillStyle = '#000000';
+                        ctx.font = 'bold 50px Inter';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(name, startX + 30, y + 70 + 14); // Added 4px top margin
 
-                // Draw employee name with 4px top margin
-                ctx.fillStyle = '#000000';
-                ctx.font = 'bold 50px Inter';
-                ctx.textAlign = 'left';
-                ctx.fillText(name, startX + 30, y + 70 + 14); // Added 4px top margin
+                        ctx.fillStyle = '#000000';
+                        ctx.font = '500 47px Inter';
 
-                // Draw department with 7px top margin
-                ctx.fillStyle = '#000000';
-                ctx.font = '500 47px Inter';
+                        jobLines.forEach((line, j) => {
+                            const lineMargin = j === 0 ? 44 : 0;
+                            ctx.fillText(line, startX + 30, y + 120 + (j * 45) + lineMargin);
+                        });
+                    }
+                }
 
-                // Handle multi-line departments
-                jobLines.forEach((line, j) => {
-                    // First line has 7px top margin, subsequent lines follow normal spacing
-                    const lineMargin = j === 0 ? 44 : 0;
-                    ctx.fillText(line, startX + 30, y + 120 + (j * 45) + lineMargin);
-                });
+                const anniversaryImg = await loadImage(selectedAnniversaryImage);
+                ctx.drawImage(anniversaryImg, 0, 0, canvas.width, canvas.height);
+
+                currentCanvasDataURL = canvas.toDataURL('image/png');
+
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'preview-container';
+
+                const previewImg = document.createElement('img');
+                previewImg.className = 'preview-image';
+                previewImg.src = currentCanvasDataURL;
+
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'button-group';
+
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'download-btn';
+                downloadBtn.textContent = 'Download Birthday Post';
+                downloadBtn.onclick = () => {
+                    const link = document.createElement('a');
+                    link.download = `Birthday_${monthName}_${day}.png`;
+                    link.href = currentCanvasDataURL;
+                    link.click();
+                };
+
+                buttonGroup.appendChild(downloadBtn);
+
+                document.querySelector('.preview-container')?.remove();
+                previewContainer.appendChild(previewImg);
+                previewContainer.appendChild(buttonGroup);
+
+                const positionControls = document.querySelector('.position-controls');
+                if (positionControls) {
+                    positionControls.after(previewContainer);
+                } else {
+                    document.getElementById('resultContainer').appendChild(previewContainer);
+                }
+
+            } catch (error) {
+                console.error("Error generating final image:", error);
+                alert("Error generating final image. Please check console for details.");
             }
         }
 
-        // Draw anniversary image LAST so it appears on top of everything
-        const anniversaryImg = await loadImage(selectedAnniversaryImage);
-        ctx.drawImage(anniversaryImg, 0, 0, canvas.width, canvas.height);
-
-        currentCanvasDataURL = canvas.toDataURL('image/png');
-
-        const previewContainer = document.createElement('div');
-        previewContainer.className = 'preview-container';
-
-        const previewImg = document.createElement('img');
-        previewImg.className = 'preview-image';
-        previewImg.src = currentCanvasDataURL;
-
-        const buttonGroup = document.createElement('div');
-        buttonGroup.className = 'button-group';
-
-        const downloadBtn = document.createElement('button');
-        downloadBtn.className = 'download-btn';
-        downloadBtn.textContent = 'Download Birthday Post';
-        downloadBtn.onclick = () => {
-            const link = document.createElement('a');
-            link.download = `Birthday_${monthName}_${day}.png`;
-            link.href = currentCanvasDataURL;
-            link.click();
-        };
-
-
-        buttonGroup.appendChild(downloadBtn);
-
-
-        document.querySelector('.preview-container')?.remove();
-        previewContainer.appendChild(previewImg);
-        previewContainer.appendChild(buttonGroup);
-
-        const positionControls = document.querySelector('.position-controls');
-        if (positionControls) {
-            positionControls.after(previewContainer);
-        } else {
-            document.getElementById('resultContainer').appendChild(previewContainer);
+        async function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => resolve(img);
+                img.onerror = (e) => {
+                    console.error("Error loading image:", src, e);
+                    reject(new Error(`Failed to load image: ${src}`));
+                };
+                img.src = src;
+            });
         }
 
-    } catch (error) {
-        console.error("Error generating final image:", error);
-        alert("Error generating final image. Please check console for details.");
-    }
-}
+        async function loadExcelFiles() {
+            const excelFileList = document.getElementById('excelFileList');
+            excelFileList.innerHTML = 'Loading available Excel files...';
 
-async function loadExcelFiles() {
-    const excelFileList = document.getElementById('excelFileList');
-    excelFileList.innerHTML = 'Loading available Excel files...';
+            try {
+                const listResponse = await fetch('/assets/docs/excel-files.json');
+                if (!listResponse.ok) throw new Error('Failed to load file list');
 
-    try {
-        // First fetch the JSON file list
-        const listResponse = await fetch('/assets/docs/excel-files.json');
-        if (!listResponse.ok) throw new Error('Failed to load file list');
+                const excelFiles = await listResponse.json();
+                excelFileList.innerHTML = '';
 
-        const excelFiles = await listResponse.json();
-        excelFileList.innerHTML = '';
+                if (excelFiles.length === 0) {
+                    excelFileList.innerHTML = 'No Excel files found';
+                    return;
+                }
 
-        if (excelFiles.length === 0) {
-            excelFileList.innerHTML = 'No Excel files found';
-            return;
-        }
+                excelFiles.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'excel-file-item';
+                    fileItem.textContent = file;
 
-        excelFiles.forEach(file => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'excel-file-item';
-            fileItem.textContent = file;
+                    fileItem.onclick = async function () {
+                        document.querySelectorAll('.excel-file-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
 
-            fileItem.onclick = async function () {
-                document.querySelectorAll('.excel-file-item').forEach(item => {
-                    item.classList.remove('selected');
-                });
-                this.classList.add('selected');
+                        try {
+                            const fileUrl = `/assets/docs/${encodeURIComponent(file)}`;
+                            const fileResponse = await fetch(fileUrl);
 
-                try {
-                    // Update path to use root-relative URL
-                    const fileUrl = `/assets/docs/${encodeURIComponent(file)}`;
-                    const fileResponse = await fetch(fileUrl);
+                            if (!fileResponse.ok) throw new Error(`HTTP error! status: ${fileResponse.status}`);
 
-                    if (!fileResponse.ok) throw new Error(`HTTP error! status: ${fileResponse.status}`);
+                            const arrayBuffer = await fileResponse.arrayBuffer();
+                            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-                    const arrayBuffer = await fileResponse.arrayBuffer();
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                            window.currentExcelData = {
+                                filename: file,
+                                data: jsonData
+                            };
 
-                    window.currentExcelData = {
-                        filename: file,
-                        data: jsonData
+                            excelFileList.innerHTML = `<div class="excel-file-item selected">${file} (loaded)</div>`;
+                        } catch (error) {
+                            console.error('Error loading Excel file:', error);
+                            excelFileList.innerHTML = `<div class="excel-file-item error">Error loading ${file}</div>`;
+                        }
                     };
 
-                    excelFileList.innerHTML = `<div class="excel-file-item selected">${file} (loaded)</div>`;
-                } catch (error) {
-                    console.error('Error loading Excel file:', error);
-                    excelFileList.innerHTML = `<div class="excel-file-item error">Error loading ${file}</div>`;
+                    excelFileList.appendChild(fileItem);
+                });
+            } catch (error) {
+                excelFileList.innerHTML = 'Error loading file list: ' + error.message;
+                console.error('Error:', error);
+            }
+        }
+
+        async function processExcel() {
+            const selectedDate = document.getElementById('datePicker').value;
+            const fileInput = document.getElementById('excelFile');
+
+            if (!selectedDate) {
+                alert("Please select a date");
+                return;
+            }
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = async function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    processExcelData(data, selectedDate);
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+            else if (window.currentExcelData) {
+                const ws = XLSX.utils.json_to_sheet(window.currentExcelData.data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+                const arrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+                processExcelData(arrayBuffer, selectedDate);
+            }
+            else {
+                alert("Please either upload an Excel file or select one from the list");
+                return;
+            }
+        }
+
+        async function processExcelData(arrayBuffer, selectedDate) {
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+            const resultContainer = document.getElementById('resultContainer');
+
+            const elementsToRemove = document.querySelectorAll('.preview-container, .month-day-display, .employee-list, .section-container');
+            elementsToRemove.forEach(el => el.remove());
+
+            const [selectedDay, selectedMonth] = selectedDate.split('/').map(Number);
+
+            birthdayEmployees = jsonData.filter(row => {
+                if (!row.ДатаР2) return false;
+
+                const dateStr = row.ДатаР2.toString().trim();
+
+                let day, month;
+
+                if (dateStr.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
+                    const parts = dateStr.split('.');
+                    day = parseInt(parts[0], 11);
+                    month = parseInt(parts[1], 10);
                 }
-            };
+                else if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
+                    const parts = dateStr.split('-');
+                    day = parseInt(parts[2], 11);
+                    month = parseInt(parts[1], 11);
+                }
+                else if (!isNaN(dateStr)) {
+                    const date = new Date((parseFloat(dateStr) - 25569) * 86400 * 1000);
+                    day = date.getDate();
+                    month = date.getMonth() + 1;
+                } else {
+                    console.warn("Unrecognized date format:", dateStr);
+                    return false;
+                }
 
-            excelFileList.appendChild(fileItem);
-        });
-    } catch (error) {
-        excelFileList.innerHTML = 'Error loading file list: ' + error.message;
-        console.error('Error:', error);
-    }
-}
-document.addEventListener('DOMContentLoaded', loadExcelFiles);
+                return day === selectedDay && month === selectedMonth;
+            }).sort((a, b) => {
+                const aName = (a.ссылка || '').toString().toLowerCase();
+                const bName = (b.ссылка || '').toString().toLowerCase();
 
-function loadImage(src) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = (e) => {
-            console.error("Error loading image:", src, e);
-            reject(new Error(`Failed to load image: ${src}`));
-        };
-        img.src = src;
-    });
-}
+                const aHasQizi = aName.endsWith('qızı');
+                const bHasQizi = bName.endsWith('qızı');
 
-flatpickr("#datePicker", {
-    dateFormat: "d/m",
-    enableTime: false,
-    noCalendar: false
-});
+                if (aHasQizi && !bHasQizi) return -1;
+                if (!aHasQizi && bHasQizi) return 1;
+                return 0;  
+            });
 
-let selectedAnniversaryImage = null;
-let canvasBgImage = null;
-let birthdayEmployees = [];
-let currentX = -600;
-let currentY = 531;
-let monthX = 530;
-let monthY = -165;
-let monthRotation = 1.1;
-let dayX = 465;
-let dayY = 71;
-let dayRotation = 1.4;
-let imageZIndex = 999;
-let currentCanvasDataURL = '';
+            currentEmployeeList = [...birthdayEmployees];
 
-async function processExcel() {
-    const selectedDate = document.getElementById('datePicker').value;
-    const fileInput = document.getElementById('excelFile');
+            const sectionContainer = document.createElement('div');
+            sectionContainer.className = 'section-container';
 
-    if (!selectedDate) {
-        alert("Please select a date");
-        return;
-    }
+            for (let i = 0; i < 5; i++) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'section-div' + (i >= currentEmployeeList.length ? ' empty' : '');
+                sectionDiv.id = `section-${i + 1}`;
 
-    // Check if a file was uploaded
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
+                if (i < currentEmployeeList.length) {
+                    const employee = currentEmployeeList[i];
+                    const name = fixTurkishCharacters(employee.ссылка);
+                    const jobOriginal = fixTurkishCharacters(employee.Department || '').trim();
+                    const jobLines = transformDepartment(jobOriginal);
 
-        reader.onload = async function (e) {
-            const data = new Uint8Array(e.target.result);
-            processExcelData(data, selectedDate);
-        };
+                    sectionDiv.innerHTML = `
+                        <h3>${name || 'Name not available'}</h3>
+                        <div>${jobLines.join('<br>')}</div>
+                    `;
+                } else {
+                    sectionDiv.innerHTML = `<h3>Section ${i + 1}</h3>`;
+                }
 
-        reader.readAsArrayBuffer(file);
-    }
-    // Check if a file was selected from the list
-    else if (window.currentExcelData) {
-        // Create a mock array buffer from the stored data
-        const ws = XLSX.utils.json_to_sheet(window.currentExcelData.data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-        const arrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                sectionContainer.appendChild(sectionDiv);
+            }
 
-        processExcelData(arrayBuffer, selectedDate);
-    }
-    // No file selected
-    else {
-        alert("Please either upload an Excel file or select one from the list");
-        return;
-    }
-}
+            resultContainer.appendChild(sectionContainer);
 
-document.getElementById('processBtn').addEventListener('click', processExcel);
+            if (currentEmployeeList.length === 0) {
+                resultContainer.innerHTML += '<p>No employees found with birthdays on this date</p>';
+                return;
+            }
 
-async function processExcelData(arrayBuffer, selectedDate) {
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+            const monthNames = ["YANVAR", "FEVRAL", "MART", "APREL", "MAY", "İYUN",
+                "İYUL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
+            const monthName = monthNames[selectedMonth - 1];
 
-    const resultContainer = document.getElementById('resultContainer');
-
-    // Clear only the preview and employee data, keep controls
-    const elementsToRemove = document.querySelectorAll('.preview-container, .month-day-display, .employee-list, .section-container');
-    elementsToRemove.forEach(el => el.remove());
-
-    // Get selected date parts
-    const [selectedDay, selectedMonth] = selectedDate.split('/').map(Number);
-
-    // Filter and sort employees - those with "qızı" in name come first
-    birthdayEmployees = jsonData.filter(row => {
-        if (!row.ДатаР2) return false;
-
-        // Convert to string in case it's a date object or number
-        const dateStr = row.ДатаР2.toString().trim();
-
-        // Handle different date formats
-        let day, month;
-
-        // Format: DD.MM.YYYY (14.06.1980)
-        if (dateStr.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
-            const parts = dateStr.split('.');
-            day = parseInt(parts[0], 11);
-            month = parseInt(parts[1], 10);
-        }
-        // Format: YYYY-MM-DD (if dates come as ISO strings)
-        else if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
-            const parts = dateStr.split('-');
-            day = parseInt(parts[2], 11);
-            month = parseInt(parts[1], 11);
-        }
-        // If it's an Excel serial date number (unlikely but possible)
-        else if (!isNaN(dateStr)) {
-            const date = new Date((parseFloat(dateStr) - 25569) * 86400 * 1000);
-            day = date.getDate();
-            month = date.getMonth() + 1;
-        } else {
-            console.warn("Unrecognized date format:", dateStr);
-            return false;
-        }
-
-        return day === selectedDay && month === selectedMonth;
-    }).sort((a, b) => {
-        // Check if name ends with "qızı" (case insensitive)
-        const aName = (a.ссылка || '').toString().toLowerCase();
-        const bName = (b.ссылка || '').toString().toLowerCase();
-
-        const aHasQizi = aName.endsWith('qızı');
-        const bHasQizi = bName.endsWith('qızı');
-
-        if (aHasQizi && !bHasQizi) return -1;
-        if (!aHasQizi && bHasQizi) return 1;
-        return 0; // Keep original order if both have or don't have "qızı"
-    });
-
-    // Rest of your existing processing code...
-    // Create and populate section divs
-    const sectionContainer = document.createElement('div');
-    sectionContainer.className = 'section-container';
-
-    for (let i = 0; i < 5; i++) {
-        const sectionDiv = document.createElement('div');
-        sectionDiv.className = 'section-div' + (i >= birthdayEmployees.length ? ' empty' : '');
-        sectionDiv.id = `section-${i + 1}`;
-
-        if (i < birthdayEmployees.length) {
-            const employee = birthdayEmployees[i];
-            const name = fixTurkishCharacters(employee.ссылка);
-            const jobOriginal = fixTurkishCharacters(employee.Department || '').trim();
-            const jobLines = transformDepartment(jobOriginal);
-
-            sectionDiv.innerHTML = `
-                <h3>${name || 'Name not available'}</h3>
-                <div>${jobLines.join('<br>')}</div>
+            const monthDayDisplay = document.createElement('div');
+            monthDayDisplay.className = 'month-day-display';
+            monthDayDisplay.innerHTML = `
+                <div class="Section-month">${monthName}</div>
+                <div class="Section-day">${selectedDay}</div>
             `;
-        } else {
-            sectionDiv.innerHTML = `<h3>Section ${i + 1}</h3>`;
+            resultContainer.appendChild(monthDayDisplay);
+
+            const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
+            const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
+
+            if (highRotationMonths.includes(monthName)) {
+                dayRotation = 1.4;
+            } else if (lowRotationMonths.includes(monthName)) {
+                dayRotation = 1.8;
+            }
+
+            createAnniversarySelector();
+            createPositionControls();
+            createTextPositionControls();
+
+            try {
+                canvasBgImage = await loadImage('./assets/img/canva.png');
+                generateFinalImage();
+            } catch (error) {
+                console.error("Error loading canvas background:", error);
+                alert("Failed to load canvas background image");
+            }
         }
 
-        sectionContainer.appendChild(sectionDiv);
-    }
-
-    resultContainer.appendChild(sectionContainer);
-
-    if (birthdayEmployees.length === 0) {
-        resultContainer.innerHTML += '<p>No employees found with birthdays on this date</p>';
-        return;
-    }
-
-    // Display month and day
-    const monthNames = ["YANVAR", "FEVRAL", "MART", "APREL", "MAY", "İYUN",
-        "İYUL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
-    const monthName = monthNames[selectedMonth - 1];
-
-    const monthDayDisplay = document.createElement('div');
-    monthDayDisplay.className = 'month-day-display';
-    monthDayDisplay.innerHTML = `
-        <div class="Section-month">${monthName}</div>
-        <div class="Section-day">${selectedDay}</div>
-    `;
-    resultContainer.appendChild(monthDayDisplay);
-
-    // Set day rotation based on month
-    const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
-    const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
-
-    if (highRotationMonths.includes(monthName)) {
-        dayRotation = 1.4;
-    } else if (lowRotationMonths.includes(monthName)) {
-        dayRotation = 1.8;
-    }
-
-    // Create anniversary selector and position controls
-    createAnniversarySelector();
-    createPositionControls();
-    createTextPositionControls();
-
-    try {
-        canvasBgImage = await loadImage('./assets/img/canva.png');
-        generateFinalImage();
-    } catch (error) {
-        console.error("Error loading canvas background:", error);
-        alert("Failed to load canvas background image");
-    }
-}
-
-async function processExcelFromBuffer(arrayBuffer, filename) {
-  try {
-    console.log(`Processing Excel file: ${filename}`);
-    // Add your Excel processing logic here
-    // Example using SheetJS:
-    // const workbook = XLSX.read(arrayBuffer, {type: 'array'});
-    // const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    // const data = XLSX.utils.sheet_to_json(firstSheet);
-    // Process your data here...
-    
-  } catch (error) {
-    console.error('Error processing Excel file:', error);
-    throw error;
-  }
-}
-
-  function transformDepartment(jobOriginal) {
+        function transformDepartment(jobOriginal) {
             const jobReplaceList = [
                 "BBGİ ofisi",
                 "Bəyannamə bölməsi",
@@ -1112,10 +954,22 @@ async function processExcelFromBuffer(arrayBuffer, filename) {
                 return ["Abşeron Express"];
             } else if (jobOriginal.startsWith("İRİD / İnsan resursları və inzibati departament")) {
                 return ["İRİD / İnsan resursları və inzibati D."];
-                
+            } else if (jobOriginal.startsWith("LİOD / Layihələrin təşkili və monitorinqi şöbəsi")) {
+                return ["LİOD / Layihələrin təşkili və monitorinqi Ş."];
             } else if (jobReplaceList.some(prefix => jobOriginal.startsWith(prefix))) {
                 return ["MB BROKER"];
             } else {
                 return [jobOriginal];
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr("#datePicker", {
+                dateFormat: "d/m",
+                enableTime: false,
+                noCalendar: false
+            });
+
+            document.getElementById('processBtn').addEventListener('click', processExcel);
+            loadExcelFiles();
+        });
