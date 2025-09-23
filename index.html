@@ -16,6 +16,7 @@
             border-radius: 5px;
             background-color: #f9f9f9;
             max-height: 400px;
+            width: fit-content;
             overflow-y: auto;
         }
         
@@ -32,6 +33,7 @@
         
         .employee-info {
             flex-grow: 1;
+            margin-right: 2rem;
         }
         
         .employee-actions {
@@ -62,6 +64,11 @@
             color: white;
         }
         
+        .btn-add {
+            background-color: #9C27B0;
+            color: white;
+        }
+        
         .btn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
@@ -76,6 +83,52 @@
         #result {
             display: block !important;
             visibility: visible !important;
+        }
+        
+        .manual-add-section {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            max-width: 800px
+        }
+        
+        .manual-add-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .manual-add-btn {
+            padding: 10px 15px;
+            background-color: #9C27B0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .manual-add-btn:hover {
+            background-color: #7B1FA2;
         }
     </style>
 </head>
@@ -114,7 +167,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
-        // Global variables
         let currentEmployeeList = [];
         let originalProcessExcelData = null;
         let selectedAnniversaryImage = null;
@@ -131,7 +183,6 @@
         let imageZIndex = 999;
         let currentCanvasDataURL = '';
         
-        // Wait for the original processExcelData to be loaded
         function waitForProcessExcelData() {
             if (typeof processExcelData !== 'undefined') {
                 originalProcessExcelData = processExcelData;
@@ -141,25 +192,19 @@
             }
         }
         
-        // Override the processExcelData function
         function overrideProcessExcelData() {
-            // Create a new function that wraps the original
             const newProcessExcelData = async function(arrayBuffer, selectedDate) {
-                // Call the original function first
                 await originalProcessExcelData(arrayBuffer, selectedDate);
                 
-                // Extract employees from the result container
                 extractEmployeesFromResultContainer();
                 
-                // Now add our employee management functionality
                 displayEmployeeList();
+                createManualAddSection();
             };
             
-            // Replace the original function
             window.processExcelData = newProcessExcelData;
         }
         
-        // Function to extract employees from result container
         function extractEmployeesFromResultContainer() {
             const resultContainer = document.getElementById('resultContainer');
             if (!resultContainer) return;
@@ -185,15 +230,16 @@
             console.log('Extracted employees:', currentEmployeeList);
         }
         
-        // Function to display employee list with controls
         function displayEmployeeList() {
             const resultDiv = document.getElementById('result');
             if (!resultDiv) return;
             
             resultDiv.innerHTML = '';
             
+            createManualAddSection();
+            
             if (!currentEmployeeList || currentEmployeeList.length === 0) {
-                resultDiv.innerHTML = '<p>No employees found. Process an Excel file first.</p>';
+                resultDiv.innerHTML += '<p>No employees found. Process an Excel file first or add employees manually.</p>';
                 return;
             }
             
@@ -243,14 +289,65 @@
             controlsContainer.appendChild(listContainer);
             resultDiv.appendChild(controlsContainer);
             
-            // Make sure the result div is visible
             resultDiv.style.display = 'block';
             resultDiv.style.visibility = 'visible';
             
             console.log('Employee list displayed');
         }
 
-        // Drag and drop variables
+        function createManualAddSection() {
+            const resultDiv = document.getElementById('result');
+            if (!resultDiv) return;
+            
+            let manualAddSection = document.querySelector('.manual-add-section');
+            
+            if (!manualAddSection) {
+                manualAddSection = document.createElement('div');
+                manualAddSection.className = 'manual-add-section';
+                manualAddSection.innerHTML = `
+                    <h3>Add Employee Manually</h3>
+                    <div class="form-group">
+                        <label for="employeeName">Employee Name</label>
+                        <input type="text" id="employeeName" placeholder="Enter employee name">
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeDepartment">Department</label>
+                        <input type="text" id="employeeDepartment" placeholder="Enter department">
+                    </div>
+                    <button class="manual-add-btn" id="addEmployeeBtn">Add Employee to Canvas</button>
+                `;
+                
+                resultDiv.insertBefore(manualAddSection, resultDiv.firstChild);
+                
+                document.getElementById('addEmployeeBtn').addEventListener('click', addEmployeeManually);
+            }
+        }
+
+        function addEmployeeManually() {
+            const nameInput = document.getElementById('employeeName');
+            const departmentInput = document.getElementById('employeeDepartment');
+            
+            const name = nameInput.value.trim();
+            const department = departmentInput.value.trim();
+            
+            if (!name) {
+                alert('Please enter an employee name');
+                return;
+            }
+            
+            currentEmployeeList.push({
+                'ссылка': name,
+                'Department': department
+            });
+            
+            nameInput.value = '';
+            departmentInput.value = '';
+            
+            updateUI();
+            
+            console.log('Added employee manually:', name, department);
+        }
+
         let draggedItem = null;
 
         function handleDragStart(e) {
@@ -272,11 +369,9 @@
                 const fromIndex = parseInt(draggedItem.dataset.index);
                 const toIndex = parseInt(this.dataset.index);
                 
-                // Reorder the array
                 const [movedItem] = currentEmployeeList.splice(fromIndex, 1);
                 currentEmployeeList.splice(toIndex, 0, movedItem);
                 
-                // Update the UI
                 updateUI();
             }
             return false;
@@ -286,53 +381,40 @@
             this.style.opacity = '1';
         }
 
-        // Function to move employee up in the list
         function moveEmployeeUp(index) {
             if (index <= 0) return;
             
-            // Swap employees in the array
             [currentEmployeeList[index], currentEmployeeList[index - 1]] = 
             [currentEmployeeList[index - 1], currentEmployeeList[index]];
             
-            // Update the UI
             updateUI();
         }
 
-        // Function to move employee down in the list
         function moveEmployeeDown(index) {
             if (index >= currentEmployeeList.length - 1) return;
             
-            // Swap employees in the array
             [currentEmployeeList[index], currentEmployeeList[index + 1]] = 
             [currentEmployeeList[index + 1], currentEmployeeList[index]];
             
-            // Update the UI
             updateUI();
         }
 
-        // Function to delete an employee from the list
         function deleteEmployee(index) {
             currentEmployeeList.splice(index, 1);
             
-            // Update the UI
             updateUI();
         }
 
-        // Function to update the UI with current employee list
         function updateUI() {
-            // Update the employee list display
             displayEmployeeList();
             
-            // Update the section container in resultContainer
             updateSectionContainer();
             
-            // Regenerate the final image
             if (typeof generateFinalImage === 'function') {
                 generateFinalImage();
             }
         }
 
-        // Function to update the section container with current employee list
         function updateSectionContainer() {
             const resultContainer = document.getElementById('resultContainer');
             if (!resultContainer) return;
@@ -344,10 +426,8 @@
                 return;
             }
             
-            // Clear existing sections
             sectionContainer.innerHTML = '';
             
-            // Recreate sections with current employee list
             for (let i = 0; i < 5; i++) {
                 const sectionDiv = document.createElement('div');
                 sectionDiv.className = 'section-div' + (i >= currentEmployeeList.length ? ' empty' : '');
@@ -373,15 +453,13 @@
             console.log('Section container updated');
         }
         
-        // Make functions globally available
         window.moveEmployeeUp = moveEmployeeUp;
         window.moveEmployeeDown = moveEmployeeDown;
         window.deleteEmployee = deleteEmployee;
+        window.addEmployeeManually = addEmployeeManually;
         
-        // Start waiting for the original processExcelData function
         waitForProcessExcelData();
 
-        // Anniversary selector function
         function createAnniversarySelector() {
             const selectorDiv = document.createElement('div');
             selectorDiv.className = 'anniversary-selector';
@@ -399,7 +477,6 @@
 
             const optionsContainer = document.getElementById('anniversaryOptions');
 
-            // Load preview images (preview1.png to preview11.png)
             for (let i = 1; i <= 12; i++) {
                 const option = document.createElement('img');
                 option.className = 'anniversary-option';
@@ -410,7 +487,6 @@
                         el.classList.remove('selected');
                     });
                     this.classList.add('selected');
-                    // Use the corresponding original image (1.png to 11.png)
                     selectedAnniversaryImage = `./assets/img/${i}.png`;
                     generateFinalImage();
                 };
@@ -427,7 +503,6 @@
             }
         }
 
-        // Position controls function
         function createPositionControls() {
             const controlsDiv = document.createElement('div');
             controlsDiv.className = 'position-controls';
@@ -484,7 +559,6 @@
             });
         }
 
-        // Text position controls function
         function createTextPositionControls() {
             const controlsDiv = document.createElement('div');
             controlsDiv.className = 'text-position-controls';
@@ -589,7 +663,6 @@
                 dayX = 465;
                 dayY = 71;
 
-                // Reset day rotation based on month
                 const monthName = document.querySelector('.Section-month')?.textContent;
                 const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
                 const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
@@ -618,7 +691,6 @@
             });
         }
 
-        // Fix Turkish characters function
         function fixTurkishCharacters(text) {
             if (!text) return text;
             const replacements = {
@@ -640,7 +712,6 @@
             return text.replace(/[İıiğĞşŞüÜöÖçÇ]/g, char => replacements[char] || char);
         }
 
-        // Generate final image function
         async function generateFinalImage() {
             if (!canvasBgImage || !selectedAnniversaryImage) return;
 
@@ -653,10 +724,8 @@
                 canvas.height = canvasBgImage.height;
                 const ctx = canvas.getContext('2d');
 
-                // Draw background
                 ctx.drawImage(canvasBgImage, 0, 0);
 
-                // Draw month name with rotation
                 ctx.save();
                 ctx.translate(canvas.width / 2 + monthX, canvas.height / 2 + monthY);
                 ctx.rotate(monthRotation * Math.PI / 180);
@@ -670,7 +739,6 @@
                 ctx.shadowOffsetY = 5;
                 ctx.fillText(monthName, 0, 0);
 
-                // Add black drop shadow
                 ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
                 ctx.shadowBlur = 10;
                 ctx.shadowOffsetX = 0;
@@ -679,7 +747,6 @@
 
                 ctx.restore();
 
-                // Draw day with rotation
                 ctx.save();
                 ctx.translate(canvas.width / 2 + dayX, canvas.height / 2 + dayY);
                 ctx.rotate(dayRotation * Math.PI / 180);
@@ -694,7 +761,6 @@
                 ctx.shadowOffsetY = 7;
                 ctx.fillText(day, 0, 0);
 
-                // Add black drop shadow for day
                 ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
                 ctx.shadowBlur = 10;
                 ctx.shadowOffsetX = 0;
@@ -703,10 +769,8 @@
 
                 ctx.restore();
 
-                // Reset shadow for employee sections
                 ctx.shadowColor = 'transparent';
 
-                // Draw employee sections
                 const startX = (canvas.width - 1054) / 2 + currentX;
                 const startY = currentY;
                 const divWidth = 1054;
@@ -724,7 +788,6 @@
                     ctx.shadowOffsetY = 5;
                     ctx.globalAlpha = employee ? 1 : 0.5;
 
-                    // Draw rounded rectangle
                     ctx.beginPath();
                     ctx.moveTo(startX + 18, y);
                     ctx.lineTo(startX + divWidth - 18, y);
@@ -746,26 +809,21 @@
                         const jobOriginal = fixTurkishCharacters(employee.Department || '').trim();
                         const jobLines = transformDepartment(jobOriginal);
 
-                        // Draw employee name with 4px top margin
                         ctx.fillStyle = '#000000';
                         ctx.font = 'bold 50px Inter';
                         ctx.textAlign = 'left';
                         ctx.fillText(name, startX + 30, y + 70 + 14); // Added 4px top margin
 
-                        // Draw department with 7px top margin
                         ctx.fillStyle = '#000000';
                         ctx.font = '500 47px Inter';
 
-                        // Handle multi-line departments
                         jobLines.forEach((line, j) => {
-                            // First line has 7px top margin, subsequent lines follow normal spacing
                             const lineMargin = j === 0 ? 44 : 0;
                             ctx.fillText(line, startX + 30, y + 120 + (j * 45) + lineMargin);
                         });
                     }
                 }
 
-                // Draw anniversary image LAST so it appears on top of everything
                 const anniversaryImg = await loadImage(selectedAnniversaryImage);
                 ctx.drawImage(anniversaryImg, 0, 0, canvas.width, canvas.height);
 
@@ -810,7 +868,6 @@
             }
         }
 
-        // Load image function
         async function loadImage(src) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -824,13 +881,11 @@
             });
         }
 
-        // Load Excel files function
         async function loadExcelFiles() {
             const excelFileList = document.getElementById('excelFileList');
             excelFileList.innerHTML = 'Loading available Excel files...';
 
             try {
-                // First fetch the JSON file list
                 const listResponse = await fetch('/assets/docs/excel-files.json');
                 if (!listResponse.ok) throw new Error('Failed to load file list');
 
@@ -854,7 +909,6 @@
                         this.classList.add('selected');
 
                         try {
-                            // Update path to use root-relative URL
                             const fileUrl = `/assets/docs/${encodeURIComponent(file)}`;
                             const fileResponse = await fetch(fileUrl);
 
@@ -885,7 +939,6 @@
             }
         }
 
-        // Process Excel function
         async function processExcel() {
             const selectedDate = document.getElementById('datePicker').value;
             const fileInput = document.getElementById('excelFile');
@@ -895,7 +948,6 @@
                 return;
             }
 
-            // Check if a file was uploaded
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 const reader = new FileReader();
@@ -907,9 +959,7 @@
 
                 reader.readAsArrayBuffer(file);
             }
-            // Check if a file was selected from the list
             else if (window.currentExcelData) {
-                // Create a mock array buffer from the stored data
                 const ws = XLSX.utils.json_to_sheet(window.currentExcelData.data);
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
@@ -917,14 +967,12 @@
 
                 processExcelData(arrayBuffer, selectedDate);
             }
-            // No file selected
             else {
                 alert("Please either upload an Excel file or select one from the list");
                 return;
             }
         }
 
-        // Process Excel data function
         async function processExcelData(arrayBuffer, selectedDate) {
             const workbook = XLSX.read(arrayBuffer, { type: 'array' });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -932,36 +980,28 @@
 
             const resultContainer = document.getElementById('resultContainer');
 
-            // Clear only the preview and employee data, keep controls
             const elementsToRemove = document.querySelectorAll('.preview-container, .month-day-display, .employee-list, .section-container');
             elementsToRemove.forEach(el => el.remove());
 
-            // Get selected date parts
             const [selectedDay, selectedMonth] = selectedDate.split('/').map(Number);
 
-            // Filter and sort employees - those with "qızı" in name come first
             birthdayEmployees = jsonData.filter(row => {
                 if (!row.ДатаР2) return false;
 
-                // Convert to string in case it's a date object or number
                 const dateStr = row.ДатаР2.toString().trim();
 
-                // Handle different date formats
                 let day, month;
 
-                // Format: DD.MM.YYYY (14.06.1980)
                 if (dateStr.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
                     const parts = dateStr.split('.');
                     day = parseInt(parts[0], 11);
                     month = parseInt(parts[1], 10);
                 }
-                // Format: YYYY-MM-DD (if dates come as ISO strings)
                 else if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
                     const parts = dateStr.split('-');
                     day = parseInt(parts[2], 11);
                     month = parseInt(parts[1], 11);
                 }
-                // If it's an Excel serial date number (unlikely but possible)
                 else if (!isNaN(dateStr)) {
                     const date = new Date((parseFloat(dateStr) - 25569) * 86400 * 1000);
                     day = date.getDate();
@@ -973,7 +1013,6 @@
 
                 return day === selectedDay && month === selectedMonth;
             }).sort((a, b) => {
-                // Check if name ends with "qızı" (case insensitive)
                 const aName = (a.ссылка || '').toString().toLowerCase();
                 const bName = (b.ссылка || '').toString().toLowerCase();
 
@@ -982,13 +1021,11 @@
 
                 if (aHasQizi && !bHasQizi) return -1;
                 if (!aHasQizi && bHasQizi) return 1;
-                return 0; // Keep original order if both have or don't have "qızı"
+                return 0;  
             });
 
-            // Update the global employee list
             currentEmployeeList = [...birthdayEmployees];
 
-            // Create and populate section divs
             const sectionContainer = document.createElement('div');
             sectionContainer.className = 'section-container';
 
@@ -1021,7 +1058,6 @@
                 return;
             }
 
-            // Display month and day
             const monthNames = ["YANVAR", "FEVRAL", "MART", "APREL", "MAY", "İYUN",
                 "İYUL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
             const monthName = monthNames[selectedMonth - 1];
@@ -1034,7 +1070,6 @@
             `;
             resultContainer.appendChild(monthDayDisplay);
 
-            // Set day rotation based on month
             const highRotationMonths = ["YANVAR", "FEVRAL", "AVQUST", "SENTYABR", "OKTYABR", "NOYABR", "DEKABR"];
             const lowRotationMonths = ["MART", "APREL", "MAY", "İYUN", "İYUL"];
 
@@ -1044,7 +1079,6 @@
                 dayRotation = 1.8;
             }
 
-            // Create anniversary selector and position controls
             createAnniversarySelector();
             createPositionControls();
             createTextPositionControls();
@@ -1058,7 +1092,6 @@
             }
         }
 
-        // Transform department function
         function transformDepartment(jobOriginal) {
             const jobReplaceList = [
                 "BBGİ ofisi",
@@ -1099,7 +1132,6 @@
             }
         }
 
-        // Initialize flatpickr and event listeners
         document.addEventListener('DOMContentLoaded', function() {
             flatpickr("#datePicker", {
                 dateFormat: "d/m",
